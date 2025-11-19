@@ -1,0 +1,19 @@
+{
+  "name": "@ocd-js/core",
+  "version": "0.1.0",
+  "description": "Core runtime for OCD-JS backend framework",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
