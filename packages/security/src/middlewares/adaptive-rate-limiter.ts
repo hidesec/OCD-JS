@@ -1,5 +1,9 @@
 import { Injectable } from "@ocd-js/core";
-import type { SecurityContext, SecurityMiddleware, SecurityNext } from "../types";
+import type {
+  SecurityContext,
+  SecurityMiddleware,
+  SecurityNext,
+} from "../types";
 
 export interface RateLimiterOptions {
   windowMs: number;
@@ -17,13 +21,21 @@ export class AdaptiveRateLimiter implements SecurityMiddleware {
   public readonly name = "AdaptiveRateLimiter";
   private readonly store = new Map<string, BucketState>();
 
-  constructor(private readonly options: RateLimiterOptions = { windowMs: 60_000, baseLimit: 100, penaltyMultiplier: 2 }) {}
+  constructor(
+    private readonly options: RateLimiterOptions = {
+      windowMs: 60_000,
+      baseLimit: 100,
+      penaltyMultiplier: 2,
+    },
+  ) {}
 
   async handle(context: SecurityContext, next: SecurityNext): Promise<void> {
     const key = this.resolveKey(context);
     const state = this.consumeBucket(key);
     if (!state.allowed) {
-      throw new Error(`Rate limit exceeded. Try again in ${Math.ceil((state.expiresAt - Date.now()) / 1000)}s`);
+      throw new Error(
+        `Rate limit exceeded. Try again in ${Math.ceil((state.expiresAt - Date.now()) / 1000)}s`,
+      );
     }
     await next();
   }
@@ -53,6 +65,8 @@ export class AdaptiveRateLimiter implements SecurityMiddleware {
   }
 
   private resolveKey(context: SecurityContext): string {
-    return context.ip ?? context.headers["x-forwarded-for"] ?? context.requestId;
+    return (
+      context.ip ?? context.headers["x-forwarded-for"] ?? context.requestId
+    );
   }
 }

@@ -1,5 +1,17 @@
-import { Controller, Get, Inject, Post, RouteSchema, ValidateBody } from "@ocd-js/core";
-import { UseSecurity, AdaptiveRateLimiter, AuditLogger, InputSanitizer } from "@ocd-js/security";
+import {
+  Controller,
+  Get,
+  Inject,
+  Post,
+  RouteSchema,
+  ValidateBody,
+} from "@ocd-js/core";
+import {
+  UseSecurity,
+  AdaptiveRateLimiter,
+  AuditLogger,
+  InputSanitizer,
+} from "@ocd-js/security";
 import { Authenticated, Roles } from "@ocd-js/auth";
 import { CreateUserDto, CreateUserInput } from "./dto/create-user.dto";
 import { UserService } from "./user.service";

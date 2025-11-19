@@ -5,7 +5,9 @@ import { AuthService } from "../auth.service";
 export class AuthGuard implements Guard {
   constructor(private readonly auth: AuthService) {}
 
-  canActivate(context: GuardContext<{ headers?: Record<string, string>; user?: unknown }>): boolean {
+  canActivate(
+    context: GuardContext<{ headers?: Record<string, string>; user?: unknown }>,
+  ): boolean {
     const authorization = context.request.headers?.authorization ?? "";
     const token = authorization.replace(/bearer /i, "");
     if (!token) {

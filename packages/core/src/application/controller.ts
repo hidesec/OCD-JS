@@ -1,6 +1,10 @@
 import { assignInjectableMetadata } from "../di/decorators";
 import { Constructor } from "../di/types";
-import { ApiVersion, DEFAULT_VERSION, resolveVersion } from "../routing/versioning";
+import {
+  ApiVersion,
+  DEFAULT_VERSION,
+  resolveVersion,
+} from "../routing/versioning";
 
 export interface ControllerOptions {
   basePath: string;
@@ -8,7 +12,8 @@ export interface ControllerOptions {
   tags?: string[];
 }
 
-export interface ControllerMetadata extends Required<Omit<ControllerOptions, "version">> {
+export interface ControllerMetadata
+  extends Required<Omit<ControllerOptions, "version">> {
   version: ApiVersion;
 }
 
@@ -31,10 +36,14 @@ export const Controller = (options: ControllerOptions): ClassDecorator => {
   };
 };
 
-export const getControllerMetadata = (target: Constructor): ControllerMetadata => {
+export const getControllerMetadata = (
+  target: Constructor,
+): ControllerMetadata => {
   const metadata = controllerDefinitions.get(target);
   if (!metadata) {
-    throw new Error(`Controller ${target.name} is missing @Controller decorator`);
+    throw new Error(
+      `Controller ${target.name} is missing @Controller decorator`,
+    );
   }
   return metadata;
 };

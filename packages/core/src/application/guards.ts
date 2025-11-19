@@ -8,17 +8,22 @@ export interface GuardContext<TRequest = any> {
 }
 
 export interface Guard {
-  canActivate(context: GuardContext, options?: Record<string, unknown>): Promise<boolean> | boolean;
+  canActivate(
+    context: GuardContext,
+    options?: Record<string, unknown>,
+  ): Promise<boolean> | boolean;
 }
 
-export const UseGuards = (...guards: InjectionToken<Guard>[]): MethodDecorator => {
+export const UseGuards = (
+  ...guards: InjectionToken<Guard>[]
+): MethodDecorator => {
   return (target, propertyKey) => {
     const controller = target.constructor as { new (...args: any[]): any };
     guards.forEach((guardToken) =>
       registerRouteEnhancer(controller, propertyKey as string | symbol, {
         kind: "guard",
         guardToken,
-      })
+      }),
     );
   };
 };

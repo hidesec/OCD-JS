@@ -1,4 +1,11 @@
-import { Dto, InferSchema, object, optional, string, number } from "@ocd-js/core";
+import {
+  Dto,
+  InferSchema,
+  object,
+  optional,
+  string,
+  number,
+} from "@ocd-js/core";
 
 export const createUserSchema = object({
   name: string({ minLength: 3, transform: (value) => value.trim() }),

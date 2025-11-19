@@ -1,5 +1,9 @@
 import { Injectable } from "@ocd-js/core";
-import type { SecurityContext, SecurityMiddleware, SecurityNext } from "../types";
+import type {
+  SecurityContext,
+  SecurityMiddleware,
+  SecurityNext,
+} from "../types";
 
 export interface CsrfOptions {
   headerName?: string;
@@ -13,7 +17,9 @@ export class CsrfProtector implements SecurityMiddleware {
   constructor(private readonly options: CsrfOptions = {}) {}
 
   async handle(context: SecurityContext, next: SecurityNext): Promise<void> {
-    const headerName = (this.options.headerName ?? "x-csrf-token").toLowerCase();
+    const headerName = (
+      this.options.headerName ?? "x-csrf-token"
+    ).toLowerCase();
     const cookieName = this.options.cookieName ?? "csrf_token";
     const headerToken = context.headers[headerName];
     const cookieToken = context.metadata?.cookies?.[cookieName];

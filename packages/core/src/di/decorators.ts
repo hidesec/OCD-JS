@@ -12,8 +12,14 @@ interface InternalInjectableDefinition {
   deps?: InjectionToken[];
 }
 
-const injectableDefinitions = new WeakMap<Constructor, InternalInjectableDefinition>();
-const parameterInjections = new WeakMap<Constructor, Map<number, InjectionToken>>();
+const injectableDefinitions = new WeakMap<
+  Constructor,
+  InternalInjectableDefinition
+>();
+const parameterInjections = new WeakMap<
+  Constructor,
+  Map<number, InjectionToken>
+>();
 
 export const Injectable = (options: InjectableOptions = {}): ClassDecorator => {
   return (target) => {
@@ -23,15 +29,20 @@ export const Injectable = (options: InjectableOptions = {}): ClassDecorator => {
 
 export const Inject = (token: InjectionToken): ParameterDecorator => {
   return (target, _propertyKey, parameterIndex) => {
-    const ctorTarget = typeof target === "function" ? target : target.constructor;
+    const ctorTarget =
+      typeof target === "function" ? target : target.constructor;
     const ctor = ctorTarget as Constructor;
-    const existing = parameterInjections.get(ctor) ?? new Map<number, InjectionToken>();
+    const existing =
+      parameterInjections.get(ctor) ?? new Map<number, InjectionToken>();
     existing.set(parameterIndex, token);
     parameterInjections.set(ctor, existing);
   };
 };
 
-export function assignInjectableMetadata(target: Constructor, options: InjectableOptions = {}): void {
+export function assignInjectableMetadata(
+  target: Constructor,
+  options: InjectableOptions = {},
+): void {
   const previous = injectableDefinitions.get(target);
   const definition: InternalInjectableDefinition = {
     token: options.token ?? previous?.token ?? target,
@@ -41,7 +52,9 @@ export function assignInjectableMetadata(target: Constructor, options: Injectabl
   injectableDefinitions.set(target, definition);
 }
 
-export function getInjectableDefinition(target: Constructor): InternalInjectableDefinition {
+export function getInjectableDefinition(
+  target: Constructor,
+): InternalInjectableDefinition {
   const definition = injectableDefinitions.get(target);
   return (
     definition ?? {
@@ -61,7 +74,9 @@ export function provideFromClass(target: Constructor): Provider {
   };
 }
 
-function collectParameterDeps(target: Constructor): InjectionToken[] | undefined {
+function collectParameterDeps(
+  target: Constructor,
+): InjectionToken[] | undefined {
   const paramLength = target.length;
   if (paramLength === 0) {
     return [];
@@ -69,13 +84,15 @@ function collectParameterDeps(target: Constructor): InjectionToken[] | undefined
   const injections = parameterInjections.get(target);
   if (!injections || injections.size < paramLength) {
     throw new Error(
-      `Constructor for ${target.name} requires ${paramLength} dependencies. Provide @Inject() metadata or explicit deps.`
+      `Constructor for ${target.name} requires ${paramLength} dependencies. Provide @Inject() metadata or explicit deps.`,
     );
   }
   return Array.from({ length: paramLength }, (_, index) => {
     const token = injections.get(index);
     if (!token) {
-      throw new Error(`Missing injection token for parameter #${index} in ${target.name}`);
+      throw new Error(
+        `Missing injection token for parameter #${index} in ${target.name}`,
+      );
     }
     return token;
   });

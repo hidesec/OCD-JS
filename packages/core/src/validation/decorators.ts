@@ -29,9 +29,13 @@ export const ValidateQuery = (schema: SchemaReference): MethodDecorator =>
 export const ValidateParams = (schema: SchemaReference): MethodDecorator =>
   createValidationDecorator("params", schema);
 
-const createValidationDecorator = (target: ValidationTarget, schema: SchemaReference): MethodDecorator => {
+const createValidationDecorator = (
+  target: ValidationTarget,
+  schema: SchemaReference,
+): MethodDecorator => {
   return (controllerPrototype, propertyKey) => {
-    const controller = controllerPrototype.constructor as unknown as Constructor;
+    const controller =
+      controllerPrototype.constructor as unknown as Constructor;
     registerRouteEnhancer(controller, propertyKey as string | symbol, {
       kind: "validation",
       target,

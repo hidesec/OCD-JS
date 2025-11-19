@@ -37,15 +37,21 @@ export const Route = (options: RouteOptions): MethodDecorator => {
   return (target, propertyKey, descriptor) => {
     const controller = target.constructor as Constructor;
     const existing = routeRegistry.get(controller) ?? [];
-    const descriptorHandler = descriptor?.value as { name?: string } | undefined;
-    const handlerKey = (propertyKey as string | symbol | undefined) ?? descriptorHandler?.name ?? "anonymous";
+    const descriptorHandler = descriptor?.value as
+      | { name?: string }
+      | undefined;
+    const handlerKey =
+      (propertyKey as string | symbol | undefined) ??
+      descriptorHandler?.name ??
+      "anonymous";
     existing.push({ ...options, handlerKey });
     routeRegistry.set(controller, existing);
     return descriptor;
   };
 };
 
-const shorthand = (method: HttpMethod) =>
+const shorthand =
+  (method: HttpMethod) =>
   (path: string, config: Omit<RouteOptions, "method" | "path"> = {}) =>
     Route({ method, path, ...config });
 
@@ -57,7 +63,9 @@ export const Del = shorthand("DELETE");
 export const Head = shorthand("HEAD");
 export const Options = shorthand("OPTIONS");
 
-export const getControllerRoutes = (controller: Constructor): RouteDefinition[] =>
+export const getControllerRoutes = (
+  controller: Constructor,
+): RouteDefinition[] =>
   (routeRegistry.get(controller) ?? []).map((definition) => ({
     ...definition,
     enhancers: consumeRouteEnhancers(controller, definition.handlerKey),

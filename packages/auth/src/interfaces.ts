@@ -12,10 +12,15 @@ export interface AuthenticatedUser {
 }
 
 export interface AuthStrategy {
-  authenticate(payload: unknown): Promise<AuthenticatedUser | null> | AuthenticatedUser | null;
+  authenticate(
+    payload: unknown,
+  ): Promise<AuthenticatedUser | null> | AuthenticatedUser | null;
 }
 
 export interface PolicyHandler {
   name: string;
-  evaluate(user: AuthenticatedUser, context?: Record<string, unknown>): boolean | Promise<boolean>;
+  evaluate(
+    user: AuthenticatedUser,
+    context?: Record<string, unknown>,
+  ): boolean | Promise<boolean>;
 }

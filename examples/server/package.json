@@ -8,6 +8,7 @@
     "build": "tsc -b"
   },
   "dependencies": {
+    "@ocd-js/observability": "file:../../packages/observability",
     "@ocd-js/auth": "file:../../packages/auth",
     "@ocd-js/core": "file:../../packages/core",
     "@ocd-js/security": "file:../../packages/security"

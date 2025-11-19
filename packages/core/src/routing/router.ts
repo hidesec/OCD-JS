@@ -1,6 +1,11 @@
 import { Constructor } from "../di/types";
 import { getControllerMetadata } from "../application/controller";
-import { RouteDefinition, RouteSchema, RouteEnhancer, getControllerRoutes } from "./routes";
+import {
+  RouteDefinition,
+  RouteSchema,
+  RouteEnhancer,
+  getControllerRoutes,
+} from "./routes";
 import { ApiVersion, resolveVersion } from "./versioning";
 
 export interface CompiledRoute {
@@ -14,7 +19,9 @@ export interface CompiledRoute {
   enhancers?: RouteEnhancer[];
 }
 
-export const compileControllerRoutes = (controllers: Constructor[]): CompiledRoute[] => {
+export const compileControllerRoutes = (
+  controllers: Constructor[],
+): CompiledRoute[] => {
   return controllers.flatMap((controller) => {
     const metadata = getControllerMetadata(controller);
     const controllerRoutes = getControllerRoutes(controller);

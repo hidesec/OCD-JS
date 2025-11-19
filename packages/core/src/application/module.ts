@@ -1,6 +1,12 @@
 import { Container } from "../di/container";
 import { assignInjectableMetadata, provideFromClass } from "../di/decorators";
-import { Constructor, InjectionToken, ModuleProvider, Provider, ProviderLike } from "../di/types";
+import {
+  Constructor,
+  InjectionToken,
+  ModuleProvider,
+  Provider,
+  ProviderLike,
+} from "../di/types";
 import { compileControllerRoutes } from "../routing/router";
 
 export interface ModuleOptions {
@@ -52,10 +58,15 @@ export interface ApplicationContext {
   container: Container;
   routes: ReturnType<typeof compileControllerRoutes>;
   snapshot(): ApplicationContextSnapshot;
-  beginRequest(extraProviders?: ProviderLike[]): { container: Container; routes: ReturnType<typeof compileControllerRoutes> };
+  beginRequest(extraProviders?: ProviderLike[]): {
+    container: Container;
+    routes: ReturnType<typeof compileControllerRoutes>;
+  };
 }
 
-export const createApplicationContext = (rootModule: Constructor): ApplicationContext => {
+export const createApplicationContext = (
+  rootModule: Constructor,
+): ApplicationContext => {
   const manifests = collectManifests(rootModule);
   const providers = collectProviders(manifests);
   const controllers = collectControllers(manifests);
@@ -74,7 +85,10 @@ export const createApplicationContext = (rootModule: Constructor): ApplicationCo
   };
 };
 
-const collectManifests = (moduleType: Constructor, memo = new Map<Constructor, ModuleManifest>()): ModuleManifest[] => {
+const collectManifests = (
+  moduleType: Constructor,
+  memo = new Map<Constructor, ModuleManifest>(),
+): ModuleManifest[] => {
   if (!memo.has(moduleType)) {
     const manifest = getModuleManifest(moduleType);
     memo.set(moduleType, manifest);
@@ -111,7 +125,9 @@ const normalizeProvider = (providerLike: ProviderLike): Provider => {
   return providerLike;
 };
 
-const flattenModuleProviders = (providers: ModuleProvider[]): ProviderLike[] => {
+const flattenModuleProviders = (
+  providers: ModuleProvider[],
+): ProviderLike[] => {
   const flattened: ProviderLike[] = [];
   providers.forEach((entry) => {
     if (Array.isArray(entry)) {

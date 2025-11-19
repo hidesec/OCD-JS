@@ -11,7 +11,9 @@ export interface EnvSchema<T extends Record<string, EnvField<any>>> {
   parse(source?: Record<string, string | undefined>): InferEnv<T>;
 }
 
-export const defineEnvSchema = <T extends Record<string, EnvField<any>>>(fields: T): EnvSchema<T> => ({
+export const defineEnvSchema = <T extends Record<string, EnvField<any>>>(
+  fields: T,
+): EnvSchema<T> => ({
   fields,
   parse: (source = process.env) => {
     const result: Partial<InferEnv<T>> = {};
@@ -23,15 +25,21 @@ export const defineEnvSchema = <T extends Record<string, EnvField<any>>>(fields:
   },
 });
 
-export const loadConfig = <T extends Record<string, EnvField<any>>>(schema: EnvSchema<T>, source?: Record<string, string | undefined>) =>
-  schema.parse(source);
+export const loadConfig = <T extends Record<string, EnvField<any>>>(
+  schema: EnvSchema<T>,
+  source?: Record<string, string | undefined>,
+) => schema.parse(source);
 
 export const env = {
-  string: (options: { default?: string; pattern?: RegExp } = {}): EnvField<string> => ({
+  string: (
+    options: { default?: string; pattern?: RegExp } = {},
+  ): EnvField<string> => ({
     parse: (value, key) => {
       const resolved = ensureValue(value, key, options.default);
       if (options.pattern && !options.pattern.test(resolved)) {
-        throw new Error(`Environment variable ${key} does not match required pattern`);
+        throw new Error(
+          `Environment variable ${key} does not match required pattern`,
+        );
       }
       return resolved;
     },
@@ -48,7 +56,11 @@ export const env = {
   }),
   boolean: (options: { default?: boolean } = {}): EnvField<boolean> => ({
     parse: (value, key) => {
-      const resolved = ensureValue(value, key, options.default !== undefined ? String(options.default) : undefined);
+      const resolved = ensureValue(
+        value,
+        key,
+        options.default !== undefined ? String(options.default) : undefined,
+      );
       if (["true", "1", "yes", "on"].includes(resolved.toLowerCase())) {
         return true;
       }
@@ -68,7 +80,11 @@ export const env = {
   }),
 };
 
-const ensureValue = (value: string | undefined, key: string, fallback?: string): string => {
+const ensureValue = (
+  value: string | undefined,
+  key: string,
+  fallback?: string,
+): string => {
   if (value === undefined || value === "") {
     if (fallback !== undefined) {
       return fallback;

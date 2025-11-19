@@ -12,7 +12,10 @@ export class JwtStrategy implements AuthStrategy {
       return null;
     }
     const [header, payload, signature] = token.split(".");
-    if (!signature || !this.verifySignature(`${header}.${payload}`, signature)) {
+    if (
+      !signature ||
+      !this.verifySignature(`${header}.${payload}`, signature)
+    ) {
       return null;
     }
     const data = JSON.parse(Buffer.from(payload, "base64").toString());

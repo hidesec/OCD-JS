@@ -1,5 +1,9 @@
 import { Injectable } from "@ocd-js/core";
-import type { SecurityContext, SecurityMiddleware, SecurityNext } from "../types";
+import type {
+  SecurityContext,
+  SecurityMiddleware,
+  SecurityNext,
+} from "../types";
 
 @Injectable()
 export class InputSanitizer implements SecurityMiddleware {

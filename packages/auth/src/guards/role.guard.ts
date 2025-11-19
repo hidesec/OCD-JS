@@ -3,7 +3,10 @@ import { AuthenticatedUser } from "../interfaces";
 
 @Injectable()
 export class RoleGuard implements Guard {
-  canActivate(context: GuardContext<{ user?: AuthenticatedUser }>, options?: Record<string, unknown>): boolean {
+  canActivate(
+    context: GuardContext<{ user?: AuthenticatedUser }>,
+    options?: Record<string, unknown>,
+  ): boolean {
     const user = context.request.user;
     if (!user) {
       return false;

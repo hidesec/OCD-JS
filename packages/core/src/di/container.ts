@@ -59,19 +59,23 @@ export class Container {
 
     const scope = provider.scope ?? "singleton";
     if (scope === "singleton") {
-      return this.getOrCreate(this.singletonCache, token, () => this.instantiate(provider));
+      return this.getOrCreate(this.singletonCache, token, () =>
+        this.instantiate(provider),
+      );
     }
 
     if (scope === "request") {
       if (this.scope !== "request") {
         throw new Error(
-          `Token ${describeToken(token)} is request scoped. Call container.beginRequest() to resolve it.`
+          `Token ${describeToken(token)} is request scoped. Call container.beginRequest() to resolve it.`,
         );
       }
       if (!this.requestCache) {
         throw new Error("Request cache not initialized");
       }
-      return this.getOrCreate(this.requestCache, token, () => this.instantiate(provider));
+      return this.getOrCreate(this.requestCache, token, () =>
+        this.instantiate(provider),
+      );
     }
 
     return this.instantiate(provider);
@@ -81,7 +85,11 @@ export class Container {
     return this.registry.get(token) ?? this.parent?.findProvider(token);
   }
 
-  private getOrCreate<T>(cache: Map<InjectionToken, unknown>, token: InjectionToken, factory: () => T): T {
+  private getOrCreate<T>(
+    cache: Map<InjectionToken, unknown>,
+    token: InjectionToken,
+    factory: () => T,
+  ): T {
     if (cache.has(token)) {
       return cache.get(token) as T;
     }

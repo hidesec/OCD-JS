@@ -1,0 +1,13 @@
+{
+  "name": "@ocd-js/observability",
+  "version": "0.1.0",
+  "description": "Observability utilities (logging, metrics, probes, error boundary) for OCD-JS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@ocd-js/core": "file:../core"
+  }
+}

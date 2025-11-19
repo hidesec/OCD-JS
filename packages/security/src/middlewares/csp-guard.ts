@@ -1,5 +1,9 @@
 import { Injectable } from "@ocd-js/core";
-import type { SecurityContext, SecurityMiddleware, SecurityNext } from "../types";
+import type {
+  SecurityContext,
+  SecurityMiddleware,
+  SecurityNext,
+} from "../types";
 
 export interface CspOptions {
   directives: Record<string, string[]>;
@@ -16,7 +20,8 @@ export class CspGuard implements SecurityMiddleware {
       .map(([directive, values]) => `${directive} ${values.join(" ")}`)
       .join("; ");
     const metadata = context.metadata ?? {};
-    const existingHeaders = (metadata.responseHeaders as Record<string, string> | undefined) ?? {};
+    const existingHeaders =
+      (metadata.responseHeaders as Record<string, string> | undefined) ?? {};
     context.metadata = {
       ...metadata,
       responseHeaders: {

@@ -13,18 +13,26 @@ export interface Schema<T> {
   parse(value: unknown, path?: string[]): ParseResult<T>;
 }
 
-export type InferSchema<TSchema> = TSchema extends Schema<infer TValue> ? TValue : never;
+export type InferSchema<TSchema> =
+  TSchema extends Schema<infer TValue> ? TValue : never;
 
 export type SchemaRecord = Record<string, Schema<any>>;
 
 const success = <T>(data: T): ParseResult<T> => ({ success: true, data });
 
-const failure = (issue: ValidationIssue): ParseResult<never> => ({ success: false, issues: [issue] });
+const failure = (issue: ValidationIssue): ParseResult<never> => ({
+  success: false,
+  issues: [issue],
+});
 
 const mergeIssues = (issues: ValidationIssue[][]): ValidationIssue[] =>
-  issues.reduce<ValidationIssue[]>((all, batch) => (batch ? all.concat(batch) : all), []);
+  issues.reduce<ValidationIssue[]>(
+    (all, batch) => (batch ? all.concat(batch) : all),
+    [],
+  );
 
-const normalizePath = (path: string[]): string => (path.length ? path.join(".") : "");
+const normalizePath = (path: string[]): string =>
+  path.length ? path.join(".") : "";
 
 export interface StringOptions {
   minLength?: number;
@@ -39,14 +47,29 @@ export const string = (options: StringOptions = {}): Schema<string> => ({
       return failure({ path: normalizePath(path), message: "Expected string" });
     }
     const transformed = options.transform ? options.transform(value) : value;
-    if (options.minLength !== undefined && transformed.length < options.minLength) {
-      return failure({ path: normalizePath(path), message: `Minimum length is ${options.minLength}` });
+    if (
+      options.minLength !== undefined &&
+      transformed.length < options.minLength
+    ) {
+      return failure({
+        path: normalizePath(path),
+        message: `Minimum length is ${options.minLength}`,
+      });
     }
-    if (options.maxLength !== undefined && transformed.length > options.maxLength) {
-      return failure({ path: normalizePath(path), message: `Maximum length is ${options.maxLength}` });
+    if (
+      options.maxLength !== undefined &&
+      transformed.length > options.maxLength
+    ) {
+      return failure({
+        path: normalizePath(path),
+        message: `Maximum length is ${options.maxLength}`,
+      });
     }
     if (options.pattern && !options.pattern.test(transformed)) {
-      return failure({ path: normalizePath(path), message: "Value does not match required pattern" });
+      return failure({
+        path: normalizePath(path),
+        message: "Value does not match required pattern",
+      });
     }
     return success(transformed);
   },
@@ -64,13 +87,22 @@ export const number = (options: NumberOptions = {}): Schema<number> => ({
       return failure({ path: normalizePath(path), message: "Expected number" });
     }
     if (options.integer && !Number.isInteger(value)) {
-      return failure({ path: normalizePath(path), message: "Expected integer" });
+      return failure({
+        path: normalizePath(path),
+        message: "Expected integer",
+      });
     }
     if (options.min !== undefined && value < options.min) {
-      return failure({ path: normalizePath(path), message: `Minimum value is ${options.min}` });
+      return failure({
+        path: normalizePath(path),
+        message: `Minimum value is ${options.min}`,
+      });
     }
     if (options.max !== undefined && value > options.max) {
-      return failure({ path: normalizePath(path), message: `Maximum value is ${options.max}` });
+      return failure({
+        path: normalizePath(path),
+        message: `Maximum value is ${options.max}`,
+      });
     }
     return success(value);
   },
@@ -93,34 +125,53 @@ export const boolean = (): Schema<boolean> => ({
   },
 });
 
-export const literal = <T extends string | number | boolean>(expected: T): Schema<T> => ({
+export const literal = <T extends string | number | boolean>(
+  expected: T,
+): Schema<T> => ({
   parse: (value, path = []) => {
     if (value !== expected) {
-      return failure({ path: normalizePath(path), message: `Expected literal ${String(expected)}` });
+      return failure({
+        path: normalizePath(path),
+        message: `Expected literal ${String(expected)}`,
+      });
     }
     return success(expected);
   },
 });
 
-export const enumeration = <T extends string>(values: readonly T[]): Schema<T> => ({
+export const enumeration = <T extends string>(
+  values: readonly T[],
+): Schema<T> => ({
   parse: (value, path = []) => {
     if (!values.includes(value as T)) {
-      return failure({ path: normalizePath(path), message: `Expected one of: ${values.join(", ")}` });
+      return failure({
+        path: normalizePath(path),
+        message: `Expected one of: ${values.join(", ")}`,
+      });
     }
     return success(value as T);
   },
 });
 
-export const array = <T>(inner: Schema<T>, options: { minLength?: number; maxLength?: number } = {}): Schema<T[]> => ({
+export const array = <T>(
+  inner: Schema<T>,
+  options: { minLength?: number; maxLength?: number } = {},
+): Schema<T[]> => ({
   parse: (value, path = []) => {
     if (!Array.isArray(value)) {
       return failure({ path: normalizePath(path), message: "Expected array" });
     }
     if (options.minLength !== undefined && value.length < options.minLength) {
-      return failure({ path: normalizePath(path), message: `Array must contain at least ${options.minLength} items` });
+      return failure({
+        path: normalizePath(path),
+        message: `Array must contain at least ${options.minLength} items`,
+      });
     }
     if (options.maxLength !== undefined && value.length > options.maxLength) {
-      return failure({ path: normalizePath(path), message: `Array must contain at most ${options.maxLength} items` });
+      return failure({
+        path: normalizePath(path),
+        message: `Array must contain at most ${options.maxLength} items`,
+      });
     }
     const parsedItems: T[] = [];
     const issues: ValidationIssue[] = [];
@@ -161,7 +212,9 @@ export const record = <T>(inner: Schema<T>): Schema<Record<string, T>> => ({
   },
 });
 
-export const object = <TShape extends SchemaRecord>(shape: TShape): Schema<{ [K in keyof TShape]: InferSchema<TShape[K]> }> => ({
+export const object = <TShape extends SchemaRecord>(
+  shape: TShape,
+): Schema<{ [K in keyof TShape]: InferSchema<TShape[K]> }> => ({
   parse: (value, path = []) => {
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
       return failure({ path: normalizePath(path), message: "Expected object" });
@@ -170,7 +223,10 @@ export const object = <TShape extends SchemaRecord>(shape: TShape): Schema<{ [K 
     const issues: ValidationIssue[][] = [];
     (Object.keys(shape) as Array<keyof TShape>).forEach((key) => {
       const schema = shape[key];
-      const parsed = schema.parse((value as Record<string, unknown>)[key as string], path.concat(String(key)));
+      const parsed = schema.parse(
+        (value as Record<string, unknown>)[key as string],
+        path.concat(String(key)),
+      );
       if (parsed.success) {
         output[key as string] = parsed.data;
       } else if (parsed.issues) {
@@ -185,7 +241,10 @@ export const object = <TShape extends SchemaRecord>(shape: TShape): Schema<{ [K 
   },
 });
 
-export const optional = <T>(schema: Schema<T>, defaultValue?: T): Schema<T | undefined> => ({
+export const optional = <T>(
+  schema: Schema<T>,
+  defaultValue?: T,
+): Schema<T | undefined> => ({
   parse: (value, path = []) => {
     if (value === undefined || value === null || value === "") {
       return success(defaultValue);
@@ -194,7 +253,9 @@ export const optional = <T>(schema: Schema<T>, defaultValue?: T): Schema<T | und
   },
 });
 
-export const union = <TOptions extends Schema<any>[]>(...options: TOptions): Schema<InferSchema<TOptions[number]>> => ({
+export const union = <TOptions extends Schema<any>[]>(
+  ...options: TOptions
+): Schema<InferSchema<TOptions[number]>> => ({
   parse: (value, path = []) => {
     const attempts = options.map((schema) => schema.parse(value, path));
     const match = attempts.find((result) => result.success);
@@ -203,10 +264,12 @@ export const union = <TOptions extends Schema<any>[]>(...options: TOptions): Sch
     }
     return {
       success: false,
-      issues: attempts.flatMap((result) => result.issues ?? []).map((issue) => ({
-        ...issue,
-        path: issue.path || normalizePath(path),
-      })),
+      issues: attempts
+        .flatMap((result) => result.issues ?? [])
+        .map((issue) => ({
+          ...issue,
+          path: issue.path || normalizePath(path),
+        })),
     };
   },
 });

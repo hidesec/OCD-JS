@@ -6,7 +6,9 @@ export interface ValidationError {
 }
 
 export interface Validator<T> {
-  validate(value: unknown): { success: true; data: T } | { success: false; errors: ValidationError[] };
+  validate(
+    value: unknown,
+  ): { success: true; data: T } | { success: false; errors: ValidationError[] };
   assert(value: unknown): T;
 }
 

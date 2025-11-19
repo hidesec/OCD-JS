@@ -33,7 +33,7 @@ export interface SecurityResult {
 export const applySecurityMiddlewares = async (
   middlewares: SecurityMiddleware[],
   context: SecurityContext,
-  finalHandler: () => Promise<void> | void
+  finalHandler: () => Promise<void> | void,
 ): Promise<SecurityResult> => {
   let blocked = false;
   let reason: string | undefined;

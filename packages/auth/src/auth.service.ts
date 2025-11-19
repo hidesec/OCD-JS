@@ -12,7 +12,8 @@ export class AuthService {
     private readonly jwt: JwtStrategy,
     private readonly sessions: SessionStrategy,
     private readonly oauth: OAuthStrategy,
-    @Inject(POLICY_REGISTRY) private readonly registry: Map<string, PolicyHandler>
+    @Inject(POLICY_REGISTRY)
+    private readonly registry: Map<string, PolicyHandler>,
   ) {}
 
   authenticateJwt(token: string): AuthenticatedUser | null {
@@ -28,14 +29,21 @@ export class AuthService {
   }
 
   createSession(user: AuthenticatedUser): string {
-    return this.sessions.createSession(user, this.options.sessionTtlSeconds ?? 3600);
+    return this.sessions.createSession(
+      user,
+      this.options.sessionTtlSeconds ?? 3600,
+    );
   }
 
   registerPolicy(handler: PolicyHandler): void {
     this.registry.set(handler.name, handler);
   }
 
-  async assertPolicies(user: AuthenticatedUser, policies: string[], context?: Record<string, unknown>): Promise<boolean> {
+  async assertPolicies(
+    user: AuthenticatedUser,
+    policies: string[],
+    context?: Record<string, unknown>,
+  ): Promise<boolean> {
     for (const policyName of policies) {
       const handler = this.registry.get(policyName);
       if (!handler) {

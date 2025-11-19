@@ -5,8 +5,8 @@
   "description": "Opinionated backend framework workspace for OCD-JS",
   "scripts": {
     "build": "tsc -b",
-    "lint": "tsc -b --pretty false",
-    "test": "node -e \"console.log('No tests yet - placeholder')\""
+    "lint": "prettier --write \"{examples,packages}/**/*.ts\" && tsc -b --pretty false",
+    "test": "npm run build && node --test tests/observability.test.js"
   },
   "workspaces": {
     "packages": [
@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
+    "prettier": "^3.3.2",
     "typescript": "^5.4.5"
   }
 }

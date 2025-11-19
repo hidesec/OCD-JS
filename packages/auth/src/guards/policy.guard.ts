@@ -7,12 +7,16 @@ import { AuthenticatedUser, PolicyHandler } from "../interfaces";
 export class PolicyGuard implements Guard {
   constructor(
     private readonly auth: AuthService,
-    @Inject(POLICY_REGISTRY) private readonly registry: Map<string, PolicyHandler>
+    @Inject(POLICY_REGISTRY)
+    private readonly registry: Map<string, PolicyHandler>,
   ) {}
 
   async canActivate(
-    context: GuardContext<{ user?: AuthenticatedUser; headers?: Record<string, string> }>,
-    options?: Record<string, unknown>
+    context: GuardContext<{
+      user?: AuthenticatedUser;
+      headers?: Record<string, string>;
+    }>,
+    options?: Record<string, unknown>,
   ): Promise<boolean> {
     const policies = (options?.policies as string[]) ?? [];
     const user = context.request.user;
@@ -32,7 +36,10 @@ export class PolicyGuard implements Guard {
     return this.evaluate(user, policies);
   }
 
-  private async evaluate(user: AuthenticatedUser, policies: string[]): Promise<boolean> {
+  private async evaluate(
+    user: AuthenticatedUser,
+    policies: string[],
+  ): Promise<boolean> {
     for (const policy of policies) {
       const handler = this.registry.get(policy);
       if (!handler) {

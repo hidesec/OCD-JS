@@ -1,5 +1,9 @@
 import { Injectable } from "@ocd-js/core";
-import type { SecurityContext, SecurityMiddleware, SecurityNext } from "../types";
+import type {
+  SecurityContext,
+  SecurityMiddleware,
+  SecurityNext,
+} from "../types";
 
 export interface AuditSink {
   write?(entry: AuditLogEntry): void;
@@ -42,7 +46,9 @@ export class AuditLogger implements SecurityMiddleware {
         status: 500,
         latencyMs: Date.now() - start,
         user: context.user,
-        metadata: { error: error instanceof Error ? error.message : String(error) },
+        metadata: {
+          error: error instanceof Error ? error.message : String(error),
+        },
       });
       throw error;
     }

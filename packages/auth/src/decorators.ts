@@ -11,20 +11,24 @@ export const Authenticated = (): MethodDecorator => (target, propertyKey) => {
   });
 };
 
-export const Roles = (...roles: string[]): MethodDecorator => (target, propertyKey) => {
-  const controller = target.constructor as Constructor;
-  registerRouteEnhancer(controller, propertyKey as string | symbol, {
-    kind: "guard",
-    guardToken: RoleGuard,
-    options: { roles },
-  });
-};
+export const Roles =
+  (...roles: string[]): MethodDecorator =>
+  (target, propertyKey) => {
+    const controller = target.constructor as Constructor;
+    registerRouteEnhancer(controller, propertyKey as string | symbol, {
+      kind: "guard",
+      guardToken: RoleGuard,
+      options: { roles },
+    });
+  };
 
-export const Policies = (...policies: string[]): MethodDecorator => (target, propertyKey) => {
-  const controller = target.constructor as Constructor;
-  registerRouteEnhancer(controller, propertyKey as string | symbol, {
-    kind: "guard",
-    guardToken: PolicyGuard,
-    options: { policies },
-  });
-};
+export const Policies =
+  (...policies: string[]): MethodDecorator =>
+  (target, propertyKey) => {
+    const controller = target.constructor as Constructor;
+    registerRouteEnhancer(controller, propertyKey as string | symbol, {
+      kind: "guard",
+      guardToken: PolicyGuard,
+      options: { policies },
+    });
+  };

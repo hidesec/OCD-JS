@@ -1,4 +1,8 @@
-import { RouteEnhancer, ValidationEnhancer, ValidationTarget } from "../routing/enhancers";
+import {
+  RouteEnhancer,
+  ValidationEnhancer,
+  ValidationTarget,
+} from "../routing/enhancers";
 import { Schema } from "./schema";
 import { ValidationException, createValidator } from "./validator";
 
@@ -8,8 +12,14 @@ export interface ValidationContext {
   params?: Record<string, string>;
 }
 
-export const applyValidationEnhancers = (enhancers: RouteEnhancer[] = [], context: ValidationContext): ValidationContext => {
-  const validationEnhancers = enhancers.filter((enhancer): enhancer is ValidationEnhancer => enhancer.kind === "validation");
+export const applyValidationEnhancers = (
+  enhancers: RouteEnhancer[] = [],
+  context: ValidationContext,
+): ValidationContext => {
+  const validationEnhancers = enhancers.filter(
+    (enhancer): enhancer is ValidationEnhancer =>
+      enhancer.kind === "validation",
+  );
   if (!validationEnhancers.length) {
     return context;
   }
@@ -28,10 +38,13 @@ export const applyValidationEnhancers = (enhancers: RouteEnhancer[] = [], contex
   return nextContext;
 };
 
-export const getValidatedPayload = <TTarget extends ValidationTarget>(enhancers: RouteEnhancer[] = [], target: TTarget) => {
-  const validationEnhancer = enhancers.find((enhancer) => enhancer.kind === "validation" && enhancer.target === target) as
-    | ValidationEnhancer
-    | undefined;
+export const getValidatedPayload = <TTarget extends ValidationTarget>(
+  enhancers: RouteEnhancer[] = [],
+  target: TTarget,
+) => {
+  const validationEnhancer = enhancers.find(
+    (enhancer) => enhancer.kind === "validation" && enhancer.target === target,
+  ) as ValidationEnhancer | undefined;
   if (!validationEnhancer) {
     return undefined;
   }
