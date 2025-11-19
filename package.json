@@ -1,7 +1,7 @@
 {
   "name": "ocd-js",
   "private": false,
-  "version": "1.2.0-beta.0",
+  "version": "1.1.2-beta",
   "description": "Opinionated backend framework workspace for OCD-JS",
   "scripts": {
     "build": "tsc -b",
