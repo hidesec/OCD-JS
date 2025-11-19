@@ -1,4 +1,6 @@
 import { Constructor } from "../di/types";
+import { consumeRouteEnhancers, RouteEnhancer } from "./enhancers";
+export type { RouteEnhancer } from "./enhancers";
 import { ApiVersion } from "./versioning";
 
 export type HttpMethod =
@@ -26,6 +28,7 @@ export interface RouteOptions {
 
 export interface RouteDefinition extends RouteOptions {
   handlerKey: string | symbol;
+  enhancers?: RouteEnhancer[];
 }
 
 const routeRegistry = new WeakMap<Constructor, RouteDefinition[]>();
@@ -55,4 +58,7 @@ export const Head = shorthand("HEAD");
 export const Options = shorthand("OPTIONS");
 
 export const getControllerRoutes = (controller: Constructor): RouteDefinition[] =>
-  routeRegistry.get(controller) ?? [];
+  (routeRegistry.get(controller) ?? []).map((definition) => ({
+    ...definition,
+    enhancers: consumeRouteEnhancers(controller, definition.handlerKey),
+  }));

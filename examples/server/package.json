@@ -8,6 +8,8 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@ocd-js/core": "file:../../packages/core"
+    "@ocd-js/auth": "file:../../packages/auth",
+    "@ocd-js/core": "file:../../packages/core",
+    "@ocd-js/security": "file:../../packages/security"
   }
 }

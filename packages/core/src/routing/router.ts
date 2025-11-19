@@ -1,6 +1,6 @@
 import { Constructor } from "../di/types";
 import { getControllerMetadata } from "../application/controller";
-import { RouteDefinition, RouteSchema, getControllerRoutes } from "./routes";
+import { RouteDefinition, RouteSchema, RouteEnhancer, getControllerRoutes } from "./routes";
 import { ApiVersion, resolveVersion } from "./versioning";
 
 export interface CompiledRoute {
@@ -11,6 +11,7 @@ export interface CompiledRoute {
   handlerKey: string | symbol;
   schema?: RouteSchema;
   tags?: string[];
+  enhancers?: RouteEnhancer[];
 }
 
 export const compileControllerRoutes = (controllers: Constructor[]): CompiledRoute[] => {
@@ -25,6 +26,7 @@ export const compileControllerRoutes = (controllers: Constructor[]): CompiledRou
       handlerKey: route.handlerKey,
       schema: route.schema,
       tags: metadata.tags,
+      enhancers: route.enhancers,
     }));
   });
 };

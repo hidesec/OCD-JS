@@ -2,6 +2,8 @@
   "files": [],
   "references": [
     { "path": "./packages/core" },
+    { "path": "./packages/security" },
+    { "path": "./packages/auth" },
     { "path": "./packages/cli" },
     { "path": "./examples/server" }
   ]

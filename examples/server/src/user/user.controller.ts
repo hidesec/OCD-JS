@@ -1,4 +1,7 @@
-import { Controller, Get, Inject, RouteSchema } from "@ocd-js/core";
+import { Controller, Get, Inject, Post, RouteSchema, ValidateBody } from "@ocd-js/core";
+import { UseSecurity, AdaptiveRateLimiter, AuditLogger, InputSanitizer } from "@ocd-js/security";
+import { Authenticated, Roles } from "@ocd-js/auth";
+import { CreateUserDto, CreateUserInput } from "./dto/create-user.dto";
 import { UserService } from "./user.service";
 
 const listSchema: RouteSchema = {
@@ -21,5 +24,14 @@ export class UserController {
   @Get("/", { schema: listSchema })
   list() {
     return this.service.findAll();
+  }
+
+  @Post("/")
+  @UseSecurity(InputSanitizer, AdaptiveRateLimiter, AuditLogger)
+  @Authenticated()
+  @Roles("admin")
+  @ValidateBody(CreateUserDto)
+  create(body: CreateUserInput) {
+    return this.service.create(body);
   }
 }
