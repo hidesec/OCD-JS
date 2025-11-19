@@ -9,6 +9,8 @@
     { "path": "./packages/dev-server" },
     { "path": "./packages/testing" },
     { "path": "./packages/tooling" },
+    { "path": "./packages/governance" },
+    { "path": "./packages/feature-flags" },
     { "path": "./packages/contract-testing" },
     { "path": "./packages/security" },
     { "path": "./packages/auth" },

@@ -13,6 +13,7 @@ import {
   InputSanitizer,
 } from "@ocd-js/security";
 import { Authenticated, Roles } from "@ocd-js/auth";
+import { FeatureGate } from "@ocd-js/feature-flags";
 import { CreateUserDto, CreateUserInput } from "./dto/create-user.dto";
 import { UserService } from "./user.service";
 
@@ -45,5 +46,11 @@ export class UserController {
   @ValidateBody(CreateUserDto)
   create(body: CreateUserInput) {
     return this.service.create(body);
+  }
+
+  @Get("/beta")
+  @FeatureGate("beta-users")
+  betaPreview() {
+    return { message: "beta endpoint" };
   }
 }

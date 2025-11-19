@@ -23,6 +23,16 @@ import { AuditPlugin } from "./plugins/audit.plugin";
 import { AppModule } from "./user/user.module";
 import { UserController } from "./user/user.controller";
 import { CreateUserInput } from "./user/dto/create-user.dto";
+import {
+  POLICY_SERVICE,
+  OWASP_TOP10_BUNDLE,
+  ReleaseChecklist,
+  PolicyService,
+} from "@ocd-js/governance";
+import {
+  FEATURE_FLAG_SERVICE,
+  FeatureFlagService,
+} from "@ocd-js/feature-flags";
 
 async function main() {
   const app = createApplicationContext(AppModule);
@@ -40,6 +50,12 @@ async function main() {
   const pluginManager = request.container.resolve(
     PLUGIN_MANAGER,
   ) as PluginManager;
+  const policyService = request.container.resolve(
+    POLICY_SERVICE,
+  ) as PolicyService;
+  const featureFlags = request.container.resolve(
+    FEATURE_FLAG_SERVICE,
+  ) as FeatureFlagService;
 
   pipeline.use(new StreamingBodyParser()).use(new FastSerializer());
 
@@ -78,6 +94,21 @@ async function main() {
   console.log("health", snapshot);
 
   console.log("metrics", renderOpenMetrics(metrics));
+
+  const policyReport = await policyService.evaluate(OWASP_TOP10_BUNDLE);
+  logger.info("policy report", { policyReport });
+
+  const checklist = new ReleaseChecklist([
+    { id: "tests", description: "All tests green", verify: () => true },
+    {
+      id: "docs",
+      description: "Docs generator run",
+      verify: () => true,
+    },
+  ]);
+  console.log("release checklist", await checklist.run());
+
+  console.log("beta flag enabled", featureFlags.isEnabled("beta-users"));
 }
 
 main().catch((error) => {

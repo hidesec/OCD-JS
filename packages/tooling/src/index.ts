@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import semver from "semver";
+import type { ApplicationContext, CompiledRoute } from "@ocd-js/core";
 
 const recommended: Record<string, string> = {
   "@ocd-js/core": "^0.1.0",
@@ -55,4 +56,47 @@ export const runUpgradeAssistant = (root: string = process.cwd()) => {
       ` - ${entry.name}: ${entry.current ?? "(missing)"} -> ${entry.recommended}`,
     );
   });
+};
+
+export interface ApiDocs {
+  generatedAt: string;
+  routes: ApiRouteDoc[];
+}
+
+export interface ApiRouteDoc {
+  method: CompiledRoute["method"];
+  path: string;
+  version: CompiledRoute["version"];
+  schema?: CompiledRoute["schema"];
+  tags?: string[];
+}
+
+export const generateApiDocs = (
+  context: Pick<ApplicationContext, "routes">,
+): ApiDocs => {
+  const routes = context.routes.map((route) => ({
+    method: route.method,
+    path: route.path,
+    version: route.version,
+    schema: route.schema,
+    tags: route.tags,
+  }));
+  return {
+    generatedAt: new Date().toISOString(),
+    routes,
+  };
+};
+
+const pluginGuidelineEntries = [
+  "Follow semantic versioning and declare compatibility in metadata",
+  "Expose lifecycle hooks responsibly (register, init, ready, shutdown)",
+  "Avoid mutating global state; rely on DI tokens",
+  "Provide contract tests so PluginManager can validate behavior",
+  "Document required environment variables and configuration options",
+];
+
+export const renderPluginGuidelines = (): string => {
+  return pluginGuidelineEntries
+    .map((entry, index) => `${index + 1}. ${entry}`)
+    .join("\n");
 };

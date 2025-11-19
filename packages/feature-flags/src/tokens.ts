@@ -1,0 +1,3 @@
+export const FEATURE_FLAG_CONFIG = Symbol.for("OCD_FEATURE_FLAG_CONFIG");
+export const FEATURE_FLAG_SERVICE = Symbol.for("OCD_FEATURE_FLAG_SERVICE");
+export const FEATURE_FLAG_GUARD = Symbol.for("OCD_FEATURE_FLAG_GUARD");

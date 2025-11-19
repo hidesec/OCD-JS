@@ -1,6 +1,6 @@
 {
   "name": "@ocd-js/testing",
-  "version": "0.1.0",
+  "version": "1.1.1-beta",
   "description": "Testing harness utilities for OCD-JS (unit/integration/e2e)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

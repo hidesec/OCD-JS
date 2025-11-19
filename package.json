@@ -1,13 +1,14 @@
 {
   "name": "ocd-js",
-  "private": true,
-  "version": "0.1.0",
+  "private": false,
+  "version": "1.1.1-beta",
   "description": "Opinionated backend framework workspace for OCD-JS",
   "scripts": {
     "build": "tsc -b",
     "lint": "prettier --write \"{examples,packages}/**/*.ts\" && tsc -b --pretty false",
     "test": "npm run build && node --test \"tests/*.test.js\"",
-    "dev": "ocd-dev --entry dist/examples/server/src/main.js --watch examples/server/src"
+    "dev": "ocd-dev --entry dist/examples/server/src/main.js --watch examples/server/src",
+    "docs": "ocd-docs --module examples/server/dist/user/user.module.js"
   },
   "workspaces": {
     "packages": [

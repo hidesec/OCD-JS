@@ -1,6 +1,6 @@
 {
   "name": "@ocd-js/dev-server",
-  "version": "0.1.0",
+  "version": "1.1.1-beta",
   "description": "Dev server with hot reload and lint/typecheck integration for OCD-JS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

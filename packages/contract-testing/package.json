@@ -1,6 +1,6 @@
 {
   "name": "@ocd-js/contract-testing",
-  "version": "0.1.0",
+  "version": "1.1.1-beta",
   "description": "Contract testing harness for OCD-JS plugins",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -10,6 +10,8 @@ import {
   CloudModule,
 } from "@ocd-js/integrations";
 import { PluginsModule } from "@ocd-js/plugins";
+import { GovernanceModule } from "@ocd-js/governance";
+import { FeatureFlagsModule, FEATURE_FLAG_CONFIG } from "@ocd-js/feature-flags";
 import { loadAppConfig } from "../config/app-config";
 import { ObservabilityController } from "../observability/observability.controller";
 import { UserController } from "./user.controller";
@@ -28,6 +30,8 @@ export const APP_CONFIG = Symbol("APP_CONFIG");
     QueueModule,
     StorageModule,
     CloudModule,
+    GovernanceModule,
+    FeatureFlagsModule,
   ],
   controllers: [UserController, ObservabilityController],
   providers: [
@@ -48,6 +52,12 @@ export const APP_CONFIG = Symbol("APP_CONFIG");
       useValue: {
         serviceName: "ocd-example-server",
         logLevel: "debug",
+      },
+    },
+    {
+      token: FEATURE_FLAG_CONFIG,
+      useValue: {
+        "beta-users": true,
       },
     },
     UserService,

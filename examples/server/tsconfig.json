@@ -11,6 +11,8 @@
     { "path": "../../packages/observability" },
     { "path": "../../packages/performance" },
     { "path": "../../packages/plugins" },
-    { "path": "../../packages/integrations" }
+    { "path": "../../packages/integrations" },
+    { "path": "../../packages/governance" },
+    { "path": "../../packages/feature-flags" }
   ]
 }
