@@ -1,0 +1,16 @@
+{
+  "name": "@ocd-js/tooling",
+  "version": "0.1.0",
+  "description": "Tooling utilities (upgrade assistant, codemod helpers) for OCD-JS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "ocd-upgrade": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "semver": "^7.6.3"
+  }
+}

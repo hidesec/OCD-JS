@@ -1,0 +1,16 @@
+{
+  "name": "@ocd-js/dev-server",
+  "version": "0.1.0",
+  "description": "Dev server with hot reload and lint/typecheck integration for OCD-JS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "ocd-dev": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0"
+  }
+}
