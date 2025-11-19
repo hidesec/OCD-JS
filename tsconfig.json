@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/core" },
     { "path": "./packages/observability" },
+    { "path": "./packages/performance" },
     { "path": "./packages/security" },
     { "path": "./packages/auth" },
     { "path": "./packages/cli" },

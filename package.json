@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc -b",
     "lint": "prettier --write \"{examples,packages}/**/*.ts\" && tsc -b --pretty false",
-    "test": "npm run build && node --test tests/observability.test.js"
+    "test": "npm run build && node --test \"tests/*.test.js\""
   },
   "workspaces": {
     "packages": [

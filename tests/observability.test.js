@@ -7,6 +7,7 @@ const {
   renderOpenMetrics,
   registerProbe,
   ProbeRegistry,
+  ErrorBoundary,
 } = require("../packages/observability/dist");
 
 test("structured logger captures correlation context", async () => {
@@ -45,4 +46,31 @@ test("probe registry aggregates probe status", async () => {
   const result = await registry.run("health");
   assert.strictEqual(result.status, "ok");
   assert.ok(result.checks.some((check) => check.name === probeName));
+});
+
+test("error boundary maps failures and counts metrics", async () => {
+  const metrics = new MetricsRegistry();
+  const logger = new StructuredLogger({ serviceName: "svc" }, () => {});
+  const boundary = new ErrorBoundary({
+    logger,
+    metrics,
+    mappings: [
+      {
+        match: (error) => error instanceof TypeError,
+        status: 400,
+        code: "TYPE_ERR",
+      },
+    ],
+  });
+
+  const success = await boundary.execute(async () => "ok");
+  assert.strictEqual(success.success, true);
+  const failure = await boundary.execute(async () => {
+    throw new TypeError("boom");
+  });
+  assert.strictEqual(failure.success, false);
+  assert.strictEqual(failure.error.status, 400);
+  assert.strictEqual(failure.error.code, "TYPE_ERR");
+  const metricOutput = renderOpenMetrics(metrics);
+  assert.match(metricOutput, /ocd_error_boundary_total/);
 });

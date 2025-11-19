@@ -12,6 +12,12 @@ import {
   StructuredLogger,
   renderOpenMetrics,
 } from "@ocd-js/observability";
+import {
+  PIPELINE_MANAGER,
+  AsyncPipeline,
+  StreamingBodyParser,
+  FastSerializer,
+} from "@ocd-js/performance";
 import { AppModule } from "./user/user.module";
 import { UserController } from "./user/user.controller";
 import { CreateUserInput } from "./user/dto/create-user.dto";
@@ -25,6 +31,9 @@ const controller = request.container.resolve(UserController);
 const logger = request.container.resolve(LOGGER) as StructuredLogger;
 const probes = request.container.resolve(PROBE_REGISTRY) as ProbeRegistry;
 const metrics = request.container.resolve(METRICS_REGISTRY) as MetricsRegistry;
+const pipeline = request.container.resolve(PIPELINE_MANAGER) as AsyncPipeline;
+
+pipeline.use(new StreamingBodyParser()).use(new FastSerializer());
 
 logger.withCorrelation("demo-correlation", () => {
   logger.info("Bootstrapped example server");

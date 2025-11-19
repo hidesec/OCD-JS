@@ -1,0 +1,17 @@
+{
+  "name": "@ocd-js/performance",
+  "version": "0.1.0",
+  "description": "Performance and scalability utilities for OCD-JS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@ocd-js/core": "file:../core",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.10"
+  }
+}

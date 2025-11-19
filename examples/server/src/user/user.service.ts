@@ -9,6 +9,7 @@ import {
   Retryable,
   HealthCheck,
 } from "@ocd-js/observability";
+import { CACHE_MANAGER, CacheManager, Cached } from "@ocd-js/performance";
 import type { AppConfig } from "../config/app-config";
 import { APP_CONFIG } from "./user.module";
 import { CreateUserInput } from "./dto/create-user.dto";
@@ -29,9 +30,11 @@ export class UserService {
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(METRICS_REGISTRY) private readonly metrics: MetricsRegistry,
     @Inject(LOGGER) private readonly logger: StructuredLogger,
+    @Inject(CACHE_MANAGER) private readonly cache: CacheManager,
   ) {}
 
   @Measure("user_list")
+  @Cached({ key: "users:list", ttlMs: 1000, tags: ["users"] })
   findAll(): UserRecord[] {
     this.logger.info("Listing users", { total: this.users.length });
     return this.users;
@@ -46,6 +49,7 @@ export class UserService {
       name: input.name,
     };
     this.users.push(record);
+    this.cache.invalidate(["users"]);
     return record;
   }
 

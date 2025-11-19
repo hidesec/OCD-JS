@@ -2,6 +2,7 @@ import { Module } from "@ocd-js/core";
 import { AuthModule, AUTH_OPTIONS } from "@ocd-js/auth";
 import { SecurityModule } from "@ocd-js/security";
 import { LOGGING_OPTIONS, ObservabilityModule } from "@ocd-js/observability";
+import { PerformanceModule } from "@ocd-js/performance";
 import { loadAppConfig } from "../config/app-config";
 import { ObservabilityController } from "../observability/observability.controller";
 import { UserController } from "./user.controller";
@@ -10,7 +11,7 @@ import { UserService } from "./user.service";
 export const APP_CONFIG = Symbol("APP_CONFIG");
 
 @Module({
-  imports: [SecurityModule, AuthModule, ObservabilityModule],
+  imports: [SecurityModule, AuthModule, ObservabilityModule, PerformanceModule],
   controllers: [UserController, ObservabilityController],
   providers: [
     {
