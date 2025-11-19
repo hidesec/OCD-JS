@@ -10,6 +10,8 @@
   "dependencies": {
     "@ocd-js/observability": "file:../../packages/observability",
     "@ocd-js/performance": "file:../../packages/performance",
+    "@ocd-js/plugins": "file:../../packages/plugins",
+    "@ocd-js/integrations": "file:../../packages/integrations",
     "@ocd-js/auth": "file:../../packages/auth",
     "@ocd-js/core": "file:../../packages/core",
     "@ocd-js/security": "file:../../packages/security"

@@ -1,0 +1,14 @@
+{
+  "name": "@ocd-js/contract-testing",
+  "version": "0.1.0",
+  "description": "Contract testing harness for OCD-JS plugins",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@ocd-js/core": "file:../core",
+    "@ocd-js/plugins": "file:../plugins"
+  }
+}

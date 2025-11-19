@@ -18,53 +18,69 @@ import {
   StreamingBodyParser,
   FastSerializer,
 } from "@ocd-js/performance";
+import { PLUGIN_MANAGER, PluginManager } from "@ocd-js/plugins";
+import { AuditPlugin } from "./plugins/audit.plugin";
 import { AppModule } from "./user/user.module";
 import { UserController } from "./user/user.controller";
 import { CreateUserInput } from "./user/dto/create-user.dto";
 
-const app = createApplicationContext(AppModule);
+async function main() {
+  const app = createApplicationContext(AppModule);
 
-console.log("routes", app.routes);
+  console.log("routes", app.routes);
 
-const request = app.beginRequest();
-const controller = request.container.resolve(UserController);
-const logger = request.container.resolve(LOGGER) as StructuredLogger;
-const probes = request.container.resolve(PROBE_REGISTRY) as ProbeRegistry;
-const metrics = request.container.resolve(METRICS_REGISTRY) as MetricsRegistry;
-const pipeline = request.container.resolve(PIPELINE_MANAGER) as AsyncPipeline;
+  const request = app.beginRequest();
+  const controller = request.container.resolve(UserController);
+  const logger = request.container.resolve(LOGGER) as StructuredLogger;
+  const probes = request.container.resolve(PROBE_REGISTRY) as ProbeRegistry;
+  const metrics = request.container.resolve(
+    METRICS_REGISTRY,
+  ) as MetricsRegistry;
+  const pipeline = request.container.resolve(PIPELINE_MANAGER) as AsyncPipeline;
+  const pluginManager = request.container.resolve(
+    PLUGIN_MANAGER,
+  ) as PluginManager;
 
-pipeline.use(new StreamingBodyParser()).use(new FastSerializer());
+  pipeline.use(new StreamingBodyParser()).use(new FastSerializer());
 
-logger.withCorrelation("demo-correlation", () => {
-  logger.info("Bootstrapped example server");
-});
+  pluginManager.register(AuditPlugin);
+  await pluginManager.bootstrap(request.container);
 
-console.log(controller.list());
+  logger.withCorrelation("demo-correlation", () => {
+    logger.info("Bootstrapped example server");
+  });
 
-const createRoute = app.routes.find((route) => route.handlerKey === "create");
-if (createRoute?.enhancers) {
-  const securityTokens = resolveSecurityTokens(createRoute.enhancers);
-  console.log(
-    "security middlewares",
-    securityTokens.map((token) =>
-      typeof token === "function" ? token.name : String(token),
-    ),
-  );
+  console.log(controller.list());
 
-  try {
-    const validated = applyValidationEnhancers(createRoute.enhancers, {
-      body: { name: "Jane", email: "jane@example.com" },
-    });
-    const payload = validated.body as CreateUserInput;
-    console.log("create user", controller.create(payload));
-  } catch (error) {
-    console.error("validation failed", error);
+  const createRoute = app.routes.find((route) => route.handlerKey === "create");
+  if (createRoute?.enhancers) {
+    const securityTokens = resolveSecurityTokens(createRoute.enhancers);
+    console.log(
+      "security middlewares",
+      securityTokens.map((token) =>
+        typeof token === "function" ? token.name : String(token),
+      ),
+    );
+
+    try {
+      const validated = applyValidationEnhancers(createRoute.enhancers, {
+        body: { name: "Jane", email: "jane@example.com" },
+      });
+      const payload = validated.body as CreateUserInput;
+      console.log("create user", controller.create(payload));
+    } catch (error) {
+      console.error("validation failed", error);
+    }
   }
-}
 
-probes.runAll().then((snapshot) => {
+  const snapshot = await probes.runAll();
   logger.info("probe snapshot", snapshot.health);
   console.log("health", snapshot);
-});
 
-console.log("metrics", renderOpenMetrics(metrics));
+  console.log("metrics", renderOpenMetrics(metrics));
+}
+
+main().catch((error) => {
+  console.error("Example server failed", error);
+  process.exit(1);
+});

@@ -1,0 +1,17 @@
+{
+  "name": "@ocd-js/plugins",
+  "version": "0.1.0",
+  "description": "Plugin framework for OCD-JS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@ocd-js/core": "file:../core",
+    "semver": "^7.6.3"
+  },
+  "devDependencies": {
+    "@types/semver": "^7.5.8"
+  }
+}
