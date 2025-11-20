@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ocd-js/core": "file:../core",
+    "@ocd-js/orm": "file:../orm",
     "commander": "^12.1.0",
     "kleur": "^4.1.5"
   }
