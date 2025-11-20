@@ -90,6 +90,82 @@ program
     },
   );
 
+program
+  .command("migrate")
+  .argument("[direction]", "up or down", "up")
+  .requiredOption("--entry <path>", "Path to compiled migrations entry file")
+  .option("--driver <driver>", "json or memory driver", "json")
+  .option(
+    "--data <file>",
+    "JSON driver data file (only for json driver)",
+    "orm-data.json",
+  )
+  .action(
+    async (
+      direction: string,
+      options: { entry: string; driver?: string; data?: string },
+    ) => {
+      const target = path.resolve(process.cwd(), options.entry);
+      await import(target);
+      const orm = await import("@ocd-js/orm");
+      const driver = createDriver(orm, options);
+      const runner = new orm.MigrationRunner(driver);
+      await runner.run(direction === "down" ? "down" : "up");
+      console.log(
+        kleur.green(
+          `migrations ${direction === "down" ? "rolled back" : "applied"}`,
+        ),
+      );
+    },
+  );
+
+program
+  .command("schema:plan")
+  .requiredOption(
+    "--entry <path>",
+    "Path to compiled entry file registering entities",
+  )
+  .option(
+    "--driver <driver>",
+    "json|memory|sqlite|postgres|mysql driver",
+    "json",
+  )
+  .option(
+    "--data <file>",
+    "JSON driver data file (for json driver)",
+    "orm-data.json",
+  )
+  .option("--dialect <dialect>", "Target SQL dialect: sqlite|postgres|mysql")
+  .action(
+    async (options: {
+      entry: string;
+      driver?: string;
+      data?: string;
+      dialect?: string;
+    }) => {
+      const target = path.resolve(process.cwd(), options.entry);
+      await import(target);
+      const orm = await import("@ocd-js/orm");
+      const driver = createDriver(orm, options);
+      const differ = new orm.SchemaDiffer(driver);
+      const plan = await differ.diff();
+      if (!plan.changes.length) {
+        console.log(kleur.green("Schema already synchronized."));
+        return;
+      }
+      const dialect = normalizeDialect(options.dialect, options.driver);
+      const statements = orm.generateSchemaStatements(plan, { dialect });
+      console.log(
+        kleur.cyan(
+          `Schema plan (${dialect}) - ${statements.length} statement${statements.length === 1 ? "" : "s"}:`,
+        ),
+      );
+      statements.forEach((statement) => {
+        console.log(kleur.gray("-"), statement);
+      });
+    },
+  );
+
 program.parseAsync(process.argv).catch((error) => {
   console.error(
     kleur.red(error instanceof Error ? error.message : String(error)),
@@ -307,3 +383,31 @@ dist
 .DS_Store
 *.log
 `;
+
+function createDriver(
+  orm: typeof import("@ocd-js/orm"),
+  options: { driver?: string; data?: string },
+) {
+  if ((options.driver ?? "json").toLowerCase() === "memory") {
+    return new orm.MemoryDatabaseDriver();
+  }
+  return new orm.JsonDatabaseDriver({
+    filePath: path.resolve(process.cwd(), options.data ?? "orm-data.json"),
+  });
+}
+
+function normalizeDialect(
+  dialect: string | undefined,
+  driver?: string,
+): "sqlite" | "postgres" | "mysql" {
+  if (dialect && isDialect(dialect)) {
+    return dialect;
+  }
+  if (driver && isDialect(driver)) {
+    return driver as "sqlite" | "postgres" | "mysql";
+  }
+  return "sqlite";
+}
+
+const isDialect = (value: string): value is "sqlite" | "postgres" | "mysql" =>
+  ["sqlite", "postgres", "mysql"].includes(value.toLowerCase());
