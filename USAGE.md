@@ -325,14 +325,25 @@ await harness.run();
 
 ## 8. Developer Experience & Testing
 
-### 8.1 Dev Server (ocd-dev)
+### 8.1 App Scaffolding (ocd new)
+
+```bash
+npx ocd new hello-world
+cd hello-world
+npm install
+npm run dev
+```
+
+This generates `package.json`, `tsconfig.json`, starter `AppModule`/controller/service, `main.ts`, and a `.gitignore`, so you can immediately run or extend a minimal OCD-JS app.
+
+### 8.2 Dev Server (ocd-dev)
 
 ```bash
 npm run dev
 # builds → lints → restarts example server with hot reload & Node inspector
 ```
 
-### 8.2 Testing Harness (@ocd-js/testing)
+### 8.3 Testing Harness (@ocd-js/testing)
 
 ```bash
 import { withUnitTest, applyMocks } from @ocd-js/testing;
@@ -343,7 +354,7 @@ await withUnitTest(AppModule, (app) => {
 });
 ```
 
-### 8.3 Upgrade Assistant & Docs
+### 8.4 Upgrade Assistant & Docs
 
 ```bash
 npx ocd-upgrade   # analyzes dependencies against recommended versions

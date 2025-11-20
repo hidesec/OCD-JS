@@ -35,6 +35,9 @@ npm install ocd-js
 git clone https://github.com/your-org/ocd-js
 cd ocd-js
 npm install
+
+# bootstrap a new OCD-JS app in ./hello-world
+npx ocd new hello-world
 ```
 
 ### Minimal bootstrap
@@ -169,6 +172,7 @@ Testing utilities let you spin up DI contexts, override providers, and run contr
 
 ## CLI Reference
 - `ocd generate <type>` – scaffold modules/services/controllers.
+- `ocd new <folder>` – create a fresh OCD-JS starter (package.json, tsconfig, module/service/controller, main bootstrap).
 - `ocd-dev` – rebuild + lint + restart with file watching.
 - `ocd-upgrade` – analyze workspace for outdated OCD-JS packages.
 - `ocd-docs` – produce JSON API docs (routes, schemas) and plugin contribution guidelines.

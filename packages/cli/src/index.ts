@@ -11,9 +11,26 @@ const program = new Command();
 program
   .name("ocd")
   .description(
-    "OCD-JS companion CLI for scaffolding modules, services, and controllers",
+    "OCD-JS companion CLI for scaffolding applications, modules, services, and controllers",
   )
   .version("0.1.0");
+
+program
+  .command("new")
+  .argument("<name>", "Project folder name")
+  .option("--directory <path>", "Parent directory", ".")
+  .option("--force", "Overwrite existing files", false)
+  .action(
+    async (name: string, options: { directory?: string; force?: boolean }) => {
+      const slug = toKebabCase(name);
+      const targetDir = path.resolve(
+        process.cwd(),
+        options.directory ?? ".",
+        slug,
+      );
+      await scaffoldProject(targetDir, slug, options.force ?? false);
+    },
+  );
 
 program
   .command("generate")
@@ -179,4 +196,114 @@ export class ${pascal}Controller {
     return this.service.findAll();
   }
 }
+`;
+
+const scaffoldProject = async (root: string, slug: string, force: boolean) => {
+  const plan: Array<[string, string]> = [
+    ["package.json", projectPackageJson(slug)],
+    ["tsconfig.json", projectTsconfig()],
+    ["src/app.module.ts", projectAppModuleTemplate()],
+    ["src/app.service.ts", projectAppServiceTemplate()],
+    ["src/app.controller.ts", projectAppControllerTemplate()],
+    ["src/main.ts", projectMainTemplate()],
+    [".gitignore", gitignoreTemplate()],
+  ];
+
+  for (const [relative, content] of plan) {
+    await writeArtifact(path.join(root, relative), content, force);
+  }
+};
+
+const projectPackageJson = (slug: string) => `{
+  "name": "${slug}",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "ts-node-esm src/main.ts"
+  },
+  "dependencies": {
+    "@ocd-js/core": "^1.1.2-beta"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
+`;
+
+const projectTsconfig = () => `{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ES2020",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": false
+  },
+  "include": ["src"]
+}
+`;
+
+const projectAppModuleTemplate = () => `import { Module } from "@ocd-js/core";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
+
+@Module({
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+`;
+
+const projectAppServiceTemplate =
+  () => `import { Injectable } from "@ocd-js/core";
+
+@Injectable()
+export class AppService {
+  getMessage() {
+    return "Hello from OCD-JS";
+  }
+}
+`;
+
+const projectAppControllerTemplate =
+  () => `import { Controller, Get, Inject } from "@ocd-js/core";
+import { AppService } from "./app.service";
+
+@Controller({ basePath: "/hello", version: "v1" })
+export class AppController {
+  constructor(@Inject(AppService) private readonly service: AppService) {}
+
+  @Get("/")
+  handle() {
+    return { message: this.service.getMessage() };
+  }
+}
+`;
+
+const projectMainTemplate =
+  () => `import { createApplicationContext } from "@ocd-js/core";
+import { AppModule } from "./app.module";
+
+async function bootstrap() {
+  const app = createApplicationContext(AppModule);
+  console.log("Available routes", app.routes);
+}
+
+bootstrap().catch((error) => {
+  console.error("Failed to bootstrap", error);
+  process.exit(1);
+});
+`;
+
+const gitignoreTemplate = () => `node_modules
+dist
+.DS_Store
+*.log
 `;
