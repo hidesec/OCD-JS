@@ -1361,7 +1361,7 @@ const installDependencies = async (root: string, manager: PackageManager) => {
     const child = spawn(command, args, {
       cwd: root,
       stdio: "inherit",
-      shell: false,
+      shell: true,
     });
     child.on("close", (code) => {
       if (code !== 0) {
@@ -1399,7 +1399,7 @@ const runNpmInstall = async (packages: string[], tag: string) => {
     const child = spawn(command, ["install", ...dependencies], {
       cwd: process.cwd(),
       stdio: "inherit",
-      shell: false,
+      shell: true,
     });
     child.on("close", (code) => {
       if (code !== 0) {
