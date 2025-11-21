@@ -1,8 +1,8 @@
 {
   "name": "ocd-js",
   "private": false,
-  "version": "1.1.4-beta",
-  "description": "Opinionated backend framework workspace for OCD-JS",
+  "version": "1.1.5-beta",
+  "description": "Opinionated TypeScript backend framework with decorator-first APIs, dependency injection, and batteries-included tooling",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -15,6 +15,29 @@
     "dev": "ocd-dev --entry dist/examples/server/src/main.js --watch examples/server/src",
     "docs": "ocd-docs --module examples/server/dist/user/user.module.js"
   },
+  "keywords": [
+    "typescript",
+    "backend",
+    "framework",
+    "decorators",
+    "dependency-injection",
+    "rest-api",
+    "express",
+    "security",
+    "observability",
+    "orm",
+    "cli"
+  ],
+  "author": "OCD-JS Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hidesec/ocd-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hidesec/ocd-js/issues"
+  },
+  "homepage": "https://github.com/hidesec/ocd-js#readme",
   "workspaces": {
     "packages": [
       "packages/*",

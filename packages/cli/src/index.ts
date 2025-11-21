@@ -1132,6 +1132,7 @@ const scaffoldProject = async (root: string, slug: string, force: boolean) => {
     ["tsconfig.json", projectTsconfig()],
     [".eslintrc.cjs", projectEslintConfig()],
     [".prettierrc.cjs", projectPrettierConfig()],
+    ["README.md", projectReadmeTemplate(slug)],
     ["src/main.ts", projectMainTemplate()],
     ["src/bootstrap.ts", projectBootstrapTemplate()],
     ["src/root.module.ts", projectRootModuleTemplate()],
@@ -1154,23 +1155,24 @@ const scaffoldProject = async (root: string, slug: string, force: boolean) => {
 const projectPackageJson = (slug: string) => `{
   "name": "${slug}",
   "version": "0.1.0",
-  "type": "module",
   "scripts": {
     "build": "tsc",
     "start": "node dist/main.js",
-    "dev": "ts-node-esm src/main.ts",
+    "dev": "tsx watch src/main.ts",
     "lint": "eslint ./src --ext .ts",
-    "test": "node --loader ts-node/esm --test ./src/**/*.spec.ts",
+    "test": "tsx --test ./src/**/*.spec.ts",
     "format": "prettier --write ./src/**/*.ts"
   },
-  "dependencies": {},
+  "dependencies": {
+    "ocd-js": "^1.1.5-beta"
+  },
   "devDependencies": {
     "@types/node": "^20.11.24",
     "@typescript-eslint/eslint-plugin": "^8.2.0",
     "@typescript-eslint/parser": "^8.2.0",
     "eslint": "^9.9.0",
     "prettier": "^3.3.2",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.7.0",
     "typescript": "^5.4.5"
   }
 }
@@ -1179,7 +1181,7 @@ const projectPackageJson = (slug: string) => `{
 const projectTsconfig = () => `{
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ES2020",
+    "module": "CommonJS",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
@@ -1194,24 +1196,31 @@ const projectTsconfig = () => `{
 `;
 
 const projectRootModuleTemplate =
-  () => `import { AppModule } from "./modules/app/app.module";
+  () => `import { Module } from "@ocd-js/core";
+import { AppModule } from "./modules/app/app.module";
 
-export class RootModule {
-  static imports = [AppModule];
-}
+@Module({
+  imports: [AppModule],
+})
+export class RootModule {}
 `;
 
 const projectFeatureModuleTemplate =
-  () => `import { AppController } from "./app.controller";
+  () => `import { Module } from "@ocd-js/core";
+import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 
-export class AppModule {
-  static controllers = [AppController];
-  static providers = [AppService];
-}
+@Module({
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
 `;
 
-const projectAppServiceTemplate = () => `export class AppService {
+const projectAppServiceTemplate = () => `import { Injectable } from "@ocd-js/core";
+
+@Injectable()
+export class AppService {
   async getStatus() {
     return {
       message: "Hello from OCD-JS",
@@ -1223,11 +1232,14 @@ const projectAppServiceTemplate = () => `export class AppService {
 `;
 
 const projectAppControllerTemplate =
-  () => `import { AppService } from "./app.service";
+  () => `import { Controller, Get, Inject } from "@ocd-js/core";
+import { AppService } from "./app.service";
 
+@Controller({ basePath: "/app", version: "1" })
 export class AppController {
-  constructor(private readonly service: AppService) {}
+  constructor(@Inject(AppService) private readonly service: AppService) {}
 
+  @Get("/status")
   async readStatus() {
     return this.service.getStatus();
   }
@@ -1243,27 +1255,111 @@ bootstrap().catch((error) => {
 `;
 
 const projectBootstrapTemplate =
-  () => `import { RootModule } from "./root.module";
+  () => `import { ExpressHttpAdapter } from "@ocd-js/server";
+import { RootModule } from "./root.module";
 
 export async function bootstrap() {
-  console.log("OCD-JS Application Starting...");
-  console.log("Root module:", RootModule);
-  console.log("Ready to add @ocd-js packages when they are published!");
+  const PORT = process.env.PORT || 3000;
+
+  const httpAdapter = new ExpressHttpAdapter({
+    module: RootModule,
+    versioning: {
+      strategy: "path",
+      prefix: "v"
+    }
+  });
+
+  const server = httpAdapter.getApp().listen(PORT);
+
+  return server;
 }
 `;
 
 const projectAppControllerSpecTemplate = () => `import test from "node:test";
 import assert from "node:assert/strict";
+import { createApplicationContext } from "@ocd-js/core";
+import { AppModule } from "./app.module";
 import { AppController } from "./app.controller";
-import { AppService } from "./app.service";
 
 test("AppController returns status", async () => {
-  const service = new AppService();
-  const controller = new AppController(service);
+  const app = createApplicationContext(AppModule);
+  const controller = app.container.resolve(AppController);
   const result = await controller.readStatus();
   assert.equal(result.message, "Hello from OCD-JS");
   assert.equal(result.status, "ready");
 });
+`;
+
+const projectReadmeTemplate = (slug: string) => `# ${slug}
+
+A new OCD-JS application with decorator-based architecture.
+
+## Getting Started
+
+### 1. Install OCD-JS packages
+
+\`\`\`bash
+npm install ocd-js
+\`\`\`
+
+### 2. Run the application
+
+\`\`\`bash
+# Development mode with auto-reload
+npm run dev
+
+# Build and run
+npm run build
+npm start
+\`\`\`
+
+### 3. Available scripts
+
+- \`npm run build\` - Compile TypeScript to JavaScript
+- \`npm start\` - Run compiled application
+- \`npm run dev\` - Run in development mode with ts-node
+- \`npm run lint\` - Lint TypeScript files
+- \`npm test\` - Run tests
+- \`npm run format\` - Format code with Prettier
+
+## Project Structure
+
+\`\`\`
+${slug}/
+├── src/
+│   ├── modules/
+│   │   └── app/
+│   │       ├── app.module.ts       # Feature module with @Module decorator
+│   │       ├── app.service.ts      # Service with @Injectable decorator
+│   │       ├── app.controller.ts   # Controller with @Controller, @Get decorators
+│   │       └── app.controller.spec.ts
+│   ├── bootstrap.ts                # Application bootstrap logic
+│   ├── main.ts                     # Entry point
+│   └── root.module.ts              # Root module
+├── package.json
+├── tsconfig.json
+└── README.md
+\`\`\`
+
+## OCD-JS Features
+
+This project is scaffolded with OCD-JS decorators:
+
+- **@Module()** - Define modules with imports, controllers, providers
+- **@Controller()** - Define HTTP controllers with routes
+- **@Injectable()** - Mark classes as injectable services
+- **@Get(), @Post(), @Put(), @Del()** - HTTP method decorators
+- **@Inject()** - Explicit dependency injection
+
+## Learn More
+
+- [OCD-JS Documentation](https://github.com/hidesec/ocd-js)
+- [OCD-JS Examples](https://github.com/hidesec/ocd-js/tree/main/examples)
+- [NPM Package](https://www.npmjs.com/package/ocd-js)
+
+## License
+
+MIT License - see the [LICENSE](https://github.com/hidesec/ocd-js/blob/main/LICENSE) file for details.
 `;
 
 const gitignoreTemplate = () => `node_modules

@@ -44,6 +44,7 @@ export class ExpressHttpAdapter {
   private readonly context: ApplicationContext;
   private readonly app: Express;
   private readonly options: AdapterConfig;
+  private serverStarted = false;
 
   constructor(options: ExpressAdapterOptions) {
     if (!options?.module) {
@@ -68,6 +69,43 @@ export class ExpressHttpAdapter {
         }),
     };
     this.configure();
+    this.setupServerListener();
+  }
+
+  private setupServerListener(): void {
+    const originalListen = this.app.listen.bind(this.app);
+    this.app.listen = ((...args: any[]) => {
+      const server = originalListen(...args);
+
+      if (!this.serverStarted) {
+        this.serverStarted = true;
+
+        server.once('listening', () => {
+          const address = server.address();
+          let port = 3000;
+
+          if (address && typeof address === 'object') {
+            port = address.port;
+          }
+
+          const timestamp = new Date().toLocaleString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          });
+
+          console.log(`\x1b[32m[OCD-JS] ${timestamp}\x1b[0m Application successfully started`);
+          console.log(`\x1b[32m[OCD-JS] ${timestamp}\x1b[0m Listening on port \x1b[36m${port}\x1b[0m`);
+          this.logRoutes();
+        });
+      }
+
+      return server;
+    }) as any;
   }
 
   getApp(): Express {
@@ -76,6 +114,40 @@ export class ExpressHttpAdapter {
 
   getRoutes(): CompiledRoute[] {
     return this.context.routes;
+  }
+
+  getMappedRoutes(): Array<{ method: string; path: string }> {
+    return this.context.routes.map((route) => ({
+      method: route.method,
+      path: this.composePath(route),
+    }));
+  }
+
+  logRoutes(): void {
+    const colors = {
+      GET: '\x1b[32m',
+      POST: '\x1b[33m',
+      PUT: '\x1b[36m',
+      DELETE: '\x1b[31m',
+      PATCH: '\x1b[35m',
+      reset: '\x1b[0m',
+    };
+
+    const timestamp = new Date().toLocaleString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+
+    this.getMappedRoutes().forEach(({ method, path }) => {
+      const color = colors[method as keyof typeof colors] || colors.reset;
+      const paddedMethod = method.padEnd(7);
+      console.log(`\x1b[32m[OCD-JS] ${timestamp}\x1b[0m ${color}${paddedMethod}${colors.reset} ${path}`);
+    });
   }
 
   private configure(): void {
@@ -135,7 +207,7 @@ export class ExpressHttpAdapter {
     const strategy = this.options.versioning.strategy;
     if (strategy === "path") {
       const prefix = this.options.versioning.prefix ?? "";
-      return `/${prefix}${version}`;
+      return prefix ? `/${prefix}${version}` : `/${version}`;
     }
     return "";
   }
