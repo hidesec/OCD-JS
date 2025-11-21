@@ -113,7 +113,11 @@ program
     "Preferred package manager (npm|pnpm|yarn|bun)",
     "npm",
   )
-  .option("--skip-install", "Skip installing dependencies", false)
+  .option(
+    "--skip-install",
+    "Skip installing dependencies (installs by default)",
+    false,
+  )
   .action(
     async (
       name: string,
@@ -1313,10 +1317,10 @@ jobs:
 `;
 
 const installDependencies = async (root: string, manager: PackageManager) => {
-  const [command, args] = resolveInstallCommand(manager);
+  const command = resolveInstallCommand(manager);
   console.log(kleur.cyan(`Installing dependencies using ${manager}...`));
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(command, args, {
+    const child = spawn(command, {
       cwd: root,
       stdio: "inherit",
       shell: true,
@@ -1332,17 +1336,16 @@ const installDependencies = async (root: string, manager: PackageManager) => {
   });
 };
 
-const resolveInstallCommand = (manager: PackageManager): [string, string[]] => {
+const resolveInstallCommand = (manager: PackageManager): string => {
+  const executable = platformExecutable(manager);
   switch (manager) {
-    case "pnpm":
-      return [platformExecutable("pnpm"), ["install"]];
     case "yarn":
-      return [platformExecutable("yarn"), []];
+      return executable;
+    case "pnpm":
     case "bun":
-      return [platformExecutable("bun"), ["install"]];
     case "npm":
     default:
-      return [platformExecutable("npm"), ["install"]];
+      return `${executable} install`;
   }
 };
 
@@ -1351,10 +1354,11 @@ const platformExecutable = (command: string) =>
 
 const runNpmInstall = async (packages: string[], tag: string) => {
   const dependencies = packages.map((pkg) => `${pkg}@${tag}`);
-  const command = platformExecutable("npm");
-  console.log(kleur.gray(`$ npm install ${dependencies.join(" ")}`));
+  const executable = platformExecutable("npm");
+  const command = `${executable} install ${dependencies.join(" ")}`;
+  console.log(kleur.gray(`$ ${command}`));
   await new Promise<void>((resolve, reject) => {
-    const child = spawn(command, ["install", ...dependencies], {
+    const child = spawn(command, {
       cwd: process.cwd(),
       stdio: "inherit",
       shell: true,
