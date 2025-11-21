@@ -5,6 +5,9 @@ export type HookType =
   | "beforeInsert"
   | "beforeUpdate"
   | "beforeRemove"
+  | "afterInsert"
+  | "afterUpdate"
+  | "afterRemove"
   | "validate";
 
 interface HookDefinition {
@@ -44,6 +47,7 @@ export interface HookContextInput<T = any> {
   driver?: DatabaseDriver;
   changeSet?: EntityChangeSet<T>;
   isNew?: boolean;
+  timestamp?: number;
 }
 
 export interface HookContext<T = any> extends HookContextInput<T> {
@@ -88,6 +92,12 @@ export const BeforeUpdate = (): MethodDecorator =>
   createHookDecorator("beforeUpdate");
 export const BeforeRemove = (): MethodDecorator =>
   createHookDecorator("beforeRemove");
+export const AfterInsert = (): MethodDecorator =>
+  createHookDecorator("afterInsert");
+export const AfterUpdate = (): MethodDecorator =>
+  createHookDecorator("afterUpdate");
+export const AfterRemove = (): MethodDecorator =>
+  createHookDecorator("afterRemove");
 export const ValidateEntity = (): MethodDecorator =>
   createHookDecorator("validate");
 
@@ -105,6 +115,7 @@ export const runEntityHooks = async <T extends object>(
     driver: options?.driver,
     changeSet: options?.changeSet,
     isNew: options?.isNew ?? type === "beforeInsert",
+    timestamp: options?.timestamp,
   };
   if (type === "validate") {
     const validationContext = createValidationContext(baseContext);

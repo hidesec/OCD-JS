@@ -16,8 +16,9 @@ import { loadAppConfig } from "../config/app-config";
 import { ObservabilityController } from "../observability/observability.controller";
 import { UserController } from "./user.controller";
 import { UserService } from "./user.service";
+import { APP_CONFIG } from "./tokens";
 
-export const APP_CONFIG = Symbol("APP_CONFIG");
+export { APP_CONFIG } from "./tokens";
 
 @Module({
   imports: [

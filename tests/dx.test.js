@@ -5,7 +5,7 @@ const { withUnitTest, applyMocks } = require("../packages/testing/dist");
 const { analyzeWorkspace } = require("../packages/tooling/dist");
 const core = require("../packages/core/dist");
 
-class DemoService {
+class WorkspaceService {
   constructor(config) {
     this.config = config;
   }
@@ -15,22 +15,22 @@ class DemoService {
   }
 }
 
-core.Injectable()(DemoService);
-core.Inject("CONFIG_TOKEN")(DemoService, undefined, 0);
+core.Injectable()(WorkspaceService);
+core.Inject("CONFIG_TOKEN")(WorkspaceService, undefined, 0);
 
-class DemoModule {}
+class WorkspaceModule {}
 
 core.Module({
   providers: [
     { token: "CONFIG_TOKEN", useValue: { message: "hello" } },
-    DemoService,
+    WorkspaceService,
   ],
-})(DemoModule);
+})(WorkspaceModule);
 
 test("testing harness applies mocks", async () => {
-  await withUnitTest(DemoModule, (app) => {
+  await withUnitTest(WorkspaceModule, (app) => {
     applyMocks(app, [{ token: "CONFIG_TOKEN", useValue: { message: "mock" } }]);
-    const service = app.context.container.resolve(DemoService);
+    const service = app.context.container.resolve(WorkspaceService);
     assert.strictEqual(service.value(), "mock");
   });
 });

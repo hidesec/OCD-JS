@@ -1,0 +1,17 @@
+{
+  "name": "@ocd-js/example-contract-testing",
+  "version": "1.1.1-beta",
+  "private": true,
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@ocd-js/core": "file:../../packages/core",
+    "@ocd-js/observability": "file:../../packages/observability",
+    "@ocd-js/plugins": "file:../../packages/plugins",
+    "@ocd-js/contract-testing": "file:../../packages/contract-testing"
+  }
+}

@@ -5,7 +5,15 @@ import { SessionStrategy } from "./strategies/session.strategy";
 import { OAuthStrategy } from "./strategies/oauth.strategy";
 import { AUTH_OPTIONS, POLICY_REGISTRY } from "./tokens";
 
-@Injectable()
+@Injectable({
+  deps: [
+    AUTH_OPTIONS,
+    JwtStrategy,
+    SessionStrategy,
+    OAuthStrategy,
+    POLICY_REGISTRY,
+  ],
+})
 export class AuthService {
   constructor(
     @Inject(AUTH_OPTIONS) private readonly options: AuthOptions,

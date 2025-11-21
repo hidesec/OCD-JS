@@ -1,8 +1,9 @@
-import type { Connection } from "./connection";
+import type { Connection, TransactionOptions } from "./connection";
 
 export interface TransactionalOptions {
   connection?: (instance: any) => Connection;
   connectionProperty?: string;
+  transaction?: TransactionOptions;
 }
 
 export const Transactional = (
@@ -32,8 +33,9 @@ export const Transactional = (
     };
     const wrapped = function (this: any, ...args: unknown[]) {
       const connection = resolveConnection(this);
-      return connection.transaction((manager) =>
-        original.apply(this, [...args, manager]),
+      return connection.transaction(
+        (manager) => original.apply(this, [...args, manager]),
+        options.transaction,
       );
     };
     descriptor.value = wrapped as unknown as typeof descriptor.value;

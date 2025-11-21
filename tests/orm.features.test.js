@@ -21,6 +21,9 @@ const {
   BeforeInsert,
   BeforeUpdate,
   BeforeRemove,
+  AfterInsert,
+  AfterUpdate,
+  AfterRemove,
   ValidateEntity,
   EntityValidationError,
   registerOrmEventListener,
@@ -351,6 +354,149 @@ test("query builder supports relation joins and filters", async () => {
   assert.equal(results[0].profile.displayName, "Energetic");
 });
 
+test("query builder whereRelation modes support some/every/none semantics", async () => {
+  class RelationModeUser {}
+  Entity({ table: "relation_mode_users" })(RelationModeUser);
+  PrimaryColumn({ type: "string" })(RelationModeUser.prototype, "id");
+  Column({ type: "string" })(RelationModeUser.prototype, "email");
+  OneToMany(() => RelationModeOrder, "user", { lazy: false })(
+    RelationModeUser.prototype,
+    "orders",
+  );
+
+  class RelationModeOrder {}
+  Entity({ table: "relation_mode_orders" })(RelationModeOrder);
+  PrimaryColumn({ type: "string" })(RelationModeOrder.prototype, "id");
+  Column({ type: "number" })(RelationModeOrder.prototype, "amount");
+  ManyToOne(() => RelationModeUser, { lazy: false, onDelete: "cascade" })(
+    RelationModeOrder.prototype,
+    "user",
+  );
+
+  const connection = new Connection({ driver: new MemoryDatabaseDriver() });
+  await connection.initialize();
+  const userRepo = connection.getRepository(RelationModeUser);
+  const orderRepo = connection.getRepository(RelationModeOrder);
+
+  const alice = await userRepo.save(
+    userRepo.create({ email: "alice@relations.io" }),
+  );
+  const bob = await userRepo.save(userRepo.create({ email: "bob@relations.io" }));
+  const clara = await userRepo.save(
+    userRepo.create({ email: "clara@relations.io" }),
+  );
+
+  await orderRepo.save(orderRepo.create({ amount: 125, user: alice }));
+  await orderRepo.save(orderRepo.create({ amount: 90, user: alice }));
+  await orderRepo.save(orderRepo.create({ amount: 15, user: bob }));
+
+  const someHighValue = await userRepo
+    .queryBuilder()
+    .whereRelation("orders", (order) => order.amount > 100)
+    .orderBy("email", "asc")
+    .getMany();
+  assert.deepEqual(
+    someHighValue.map((user) => user.email),
+    ["alice@relations.io"],
+  );
+
+  const everyPremium = await userRepo
+    .queryBuilder()
+    .whereRelation("orders", (order) => order.amount > 80, {
+      mode: "every",
+    })
+    .orderBy("email", "asc")
+    .getMany();
+  assert.deepEqual(
+    everyPremium.map((user) => user.email),
+    ["alice@relations.io"],
+  );
+
+  const noneLargeOrders = await userRepo
+    .queryBuilder()
+    .whereRelation("orders", (order) => order.amount >= 50, {
+      mode: "none",
+    })
+    .orderBy("email", "asc")
+    .getMany();
+  assert.deepEqual(
+    noneLargeOrders.map((user) => user.email),
+    ["bob@relations.io", "clara@relations.io"],
+  );
+
+  const recorded = [];
+  const unregister = registerQueryInstrumentation((payload) => {
+    recorded.push(payload);
+  });
+  await userRepo
+    .queryBuilder()
+    .leftJoin("orders")
+    .whereRelation("orders", (order) => order.amount > 60, {
+      mode: "every",
+    })
+    .getMany();
+  unregister();
+  const observed = recorded.pop();
+  assert.ok(observed);
+  assert.equal(observed.relationFilters, 1);
+  assert.deepEqual(observed.relationFilterModes, ["every"]);
+  assert.equal(observed.joinTypes.left, 1);
+  assert.equal(observed.scanType, "driverPushdown");
+});
+
+test("query builder distinguishes inner and left joins", async () => {
+  class JoinModeCustomer {}
+  Entity({ table: "join_mode_customers" })(JoinModeCustomer);
+  PrimaryColumn({ type: "string" })(JoinModeCustomer.prototype, "id");
+  Column({ type: "string" })(JoinModeCustomer.prototype, "email");
+  OneToMany(() => JoinModeInvoice, "customer", { lazy: false })(
+    JoinModeCustomer.prototype,
+    "invoices",
+  );
+
+  class JoinModeInvoice {}
+  Entity({ table: "join_mode_invoices" })(JoinModeInvoice);
+  PrimaryColumn({ type: "string" })(JoinModeInvoice.prototype, "id");
+  Column({ type: "boolean" })(JoinModeInvoice.prototype, "paid");
+  ManyToOne(() => JoinModeCustomer, { lazy: false, onDelete: "cascade" })(
+    JoinModeInvoice.prototype,
+    "customer",
+  );
+
+  const connection = new Connection({ driver: new MemoryDatabaseDriver() });
+  await connection.initialize();
+  const customerRepo = connection.getRepository(JoinModeCustomer);
+  const invoiceRepo = connection.getRepository(JoinModeInvoice);
+
+  const rich = await customerRepo.save(
+    customerRepo.create({ email: "rich@joiners.io" }),
+  );
+  const trial = await customerRepo.save(
+    customerRepo.create({ email: "trial@joiners.io" }),
+  );
+  await customerRepo.save(customerRepo.create({ email: "idle@joiners.io" }));
+
+  await invoiceRepo.save(invoiceRepo.create({ paid: true, customer: rich }));
+  await invoiceRepo.save(invoiceRepo.create({ paid: false, customer: trial }));
+
+  const innerResults = await customerRepo
+    .queryBuilder()
+    .innerJoin("invoices", (invoice) => invoice.paid === true)
+    .orderBy("email", "asc")
+    .getMany();
+  assert.deepEqual(innerResults.map((entry) => entry.email), ["rich@joiners.io"]);
+
+  const leftResults = await customerRepo
+    .queryBuilder()
+    .leftJoin("invoices", (invoice) => invoice.paid === true)
+    .orderBy("email", "asc")
+    .getMany();
+  assert.deepEqual(
+    leftResults.map((entry) => entry.email),
+    ["idle@joiners.io", "rich@joiners.io", "trial@joiners.io"],
+  );
+});
+
 test("schema differ detects column removals", async () => {
   const driver = new MemoryDatabaseDriver();
   await driver.init();
@@ -651,6 +797,98 @@ test("hooks receive context and validation aggregates errors", async () => {
   assert.deepEqual(changedFields[0], ["title"]);
 });
 
+test("after hooks emit updated change sets and timestamps", async () => {
+  class LifecycleEntity {
+    constructor() {
+      this.audit = [];
+    }
+
+    recordInsert(context) {
+      this.audit.push({ action: context.action, changed: context.changeSet?.changedFields ?? [] });
+      assert.ok(typeof context.timestamp === "number");
+    }
+
+    recordUpdate(context) {
+      this.audit.push({ action: context.action, changed: context.changeSet?.changedFields ?? [] });
+    }
+
+    trackRemoval(context) {
+      LifecycleEntity.removed.push(context.changeSet?.before?.title);
+    }
+  }
+
+  LifecycleEntity.removed = [];
+
+  Entity({ table: "lifecycle_entities" })(LifecycleEntity);
+  PrimaryColumn({ type: "string" })(LifecycleEntity.prototype, "id");
+  Column({ type: "string" })(LifecycleEntity.prototype, "title");
+
+  const define = (method) =>
+    Object.getOwnPropertyDescriptor(LifecycleEntity.prototype, method);
+
+  AfterInsert()(LifecycleEntity.prototype, "recordInsert", define("recordInsert"));
+  AfterUpdate()(LifecycleEntity.prototype, "recordUpdate", define("recordUpdate"));
+  BeforeRemove()(LifecycleEntity.prototype, "trackRemoval", define("trackRemoval"));
+  AfterRemove()(LifecycleEntity.prototype, "trackRemoval", define("trackRemoval"));
+
+  const connection = new Connection({ driver: new MemoryDatabaseDriver() });
+  await connection.initialize();
+  const repo = connection.getRepository(LifecycleEntity);
+
+  const entity = repo.create({ title: "initial" });
+  const inserted = await repo.save(entity);
+  assert.equal(inserted.audit[0].action, "afterInsert");
+  assert.ok(inserted.audit[0].changed.includes("title"));
+
+  inserted.title = "updated";
+  const updated = await repo.save(inserted);
+  assert.equal(updated.audit.length, 2);
+  assert.equal(updated.audit[1].action, "afterUpdate");
+  assert.ok(updated.audit[1].changed.includes("title"));
+
+  await repo.delete({ id: updated.id });
+  assert.deepEqual(LifecycleEntity.removed, ["updated", "updated"]);
+});
+
+test("global lifecycle events publish payloads", async () => {
+  const events = [];
+
+  class EventEntity {}
+  Entity({ table: "event_entities" })(EventEntity);
+  PrimaryColumn({ type: "string" })(EventEntity.prototype, "id");
+  Column({ type: "string" })(EventEntity.prototype, "state");
+
+  const unregister = [
+    registerOrmEventListener("beforeEntityPersist", (payload) =>
+      events.push(`before:${payload.action}:${payload.changeSet.changedFields.length}`),
+    ),
+    registerOrmEventListener("afterEntityPersist", (payload) =>
+      events.push(`after:${payload.action}:${payload.metadata.tableName}`),
+    ),
+    registerOrmEventListener("beforeEntityRemove", (payload) =>
+      events.push(`before-remove:${payload.changeSet.changedFields.length}`),
+    ),
+    registerOrmEventListener("afterEntityRemove", (payload) =>
+      events.push(`after-remove:${payload.metadata.tableName}`),
+    ),
+  ];
+
+  const connection = new Connection({ driver: new MemoryDatabaseDriver() });
+  await connection.initialize();
+  const repo = connection.getRepository(EventEntity);
+
+  const entity = await repo.save(repo.create({ state: "draft" }));
+  entity.state = "final";
+  await repo.save(entity);
+  await repo.delete({ id: entity.id });
+
+  unregister.forEach((dispose) => dispose());
+
+  assert.ok(events.some((entry) => entry.startsWith("before:insert")));
+  assert.ok(events.some((entry) => entry.startsWith("after:update")));
+  assert.ok(events.includes("after-remove:event_entities"));
+});
+
 test("identity map reuses entity instances and proxies track updates", async () => {
   class IdentityArticle {}
 
@@ -851,17 +1089,29 @@ test("query plan instrumentation captures metrics", async () => {
   const repo = connection.getRepository(InstrumentedItem);
   await repo.save(repo.create({ label: "observed" }));
   const results = await repo.find({ where: { label: "observed" } });
+  await repo
+    .queryBuilder()
+    .andWhere(() => true)
+    .getMany();
 
   unregister();
   assert.equal(results.length, 1);
-  assert.ok(payloads.length >= 1);
-  const last = payloads[payloads.length - 1];
-  assert.equal(last.plan.table, "instrumented_items");
-  assert.equal(last.operation, "many");
-  assert.equal(last.resultCount, 1);
-  assert.equal(last.driverPushdown, true);
-  assert.equal(last.source, "driver");
-  assert.equal(last.filters, 1);
-  assert.ok(last.durationMs >= 0);
+  assert.ok(payloads.length >= 2);
+  const pushdownPayload = payloads.find((entry) => entry.scanType === "driverPushdown");
+  const tableScanPayload = payloads.find((entry) => entry.scanType === "tableScan");
+  assert.ok(pushdownPayload);
+  assert.ok(tableScanPayload);
+  assert.equal(pushdownPayload.plan.table, "instrumented_items");
+  assert.equal(pushdownPayload.operation, "many");
+  assert.equal(pushdownPayload.resultCount, 1);
+  assert.equal(pushdownPayload.driverPushdown, true);
+  assert.equal(pushdownPayload.source, "driver");
+  assert.equal(pushdownPayload.filters, 1);
+  assert.equal(pushdownPayload.relationFilters, 0);
+  assert.deepEqual(pushdownPayload.joinTypes, { inner: 0, left: 0 });
+  assert.equal(pushdownPayload.requestedRelations, 0);
+  assert.ok(pushdownPayload.durationMs >= 0);
+  assert.equal(tableScanPayload.scanType, "tableScan");
+  assert.equal(tableScanPayload.driverPushdown, false);
 });
 

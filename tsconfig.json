@@ -1,5 +1,11 @@
 {
-  "files": [],
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["index.ts"],
   "references": [
     { "path": "./packages/core" },
     { "path": "./packages/observability" },
@@ -15,7 +21,23 @@
     { "path": "./packages/contract-testing" },
     { "path": "./packages/security" },
     { "path": "./packages/auth" },
+    { "path": "./packages/server" },
     { "path": "./packages/cli" },
-    { "path": "./examples/server" }
+    { "path": "./examples/auth" },
+    { "path": "./examples/cli" },
+    { "path": "./examples/contract-testing" },
+    { "path": "./examples/core" },
+    { "path": "./examples/dev-server" },
+    { "path": "./examples/feature-flags" },
+    { "path": "./examples/governance" },
+    { "path": "./examples/integrations" },
+    { "path": "./examples/observability" },
+    { "path": "./examples/orm" },
+    { "path": "./examples/performance" },
+    { "path": "./examples/plugins/audit" },
+    { "path": "./examples/security" },
+    { "path": "./examples/server" },
+    { "path": "./examples/testing" },
+    { "path": "./examples/tooling" }
   ]
 }

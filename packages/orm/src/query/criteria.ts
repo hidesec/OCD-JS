@@ -35,12 +35,30 @@ export interface ScalarFilter {
   value: any;
 }
 
+export type AggregateFunction = "count" | "sum" | "avg" | "min" | "max";
+
+export interface AggregateSelection {
+  alias: string;
+  field?: string;
+  fn: AggregateFunction;
+  distinct?: boolean;
+}
+
+export interface SelectExpression {
+  field: string;
+  alias?: string;
+}
+
 export interface QueryPlan {
   table: string;
   filters: ScalarFilter[];
   orderBy?: { field: string; direction: "asc" | "desc" };
   limit?: number;
   offset?: number;
+  select?: SelectExpression[];
+  aggregates?: AggregateSelection[];
+  groupBy?: string[];
+  having?: ScalarFilter[];
 }
 
 export const isOperator = <V>(

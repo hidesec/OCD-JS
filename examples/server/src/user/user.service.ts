@@ -11,7 +11,7 @@ import {
 } from "@ocd-js/observability";
 import { CACHE_MANAGER, CacheManager, Cached } from "@ocd-js/performance";
 import type { AppConfig } from "../config/app-config";
-import { APP_CONFIG } from "./user.module";
+import { APP_CONFIG } from "./tokens";
 import { CreateUserInput } from "./dto/create-user.dto";
 import {
   DB_CLIENT,
@@ -30,7 +30,18 @@ export interface UserRecord {
 }
 
 @UseMetrics()
-@Injectable()
+@Injectable({
+  deps: [
+    APP_CONFIG,
+    METRICS_REGISTRY,
+    LOGGER,
+    CACHE_MANAGER,
+    DB_CLIENT,
+    QUEUE_CLIENT,
+    STORAGE_CLIENT,
+    CLOUD_PUBSUB,
+  ],
+})
 export class UserService {
   private readonly users: UserRecord[] = [
     { id: 1, name: `Env: ${this.config.NODE_ENV}` },

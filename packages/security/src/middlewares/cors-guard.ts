@@ -16,7 +16,14 @@ export interface CorsOptions {
 export class CorsGuard implements SecurityMiddleware {
   public readonly name = "CorsGuard";
 
-  constructor(private readonly options: CorsOptions) {}
+  constructor(
+    private readonly options: CorsOptions = {
+      origins: ["*"],
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      headers: ["Content-Type", "Authorization"],
+      credentials: false,
+    },
+  ) {}
 
   async handle(context: SecurityContext, next: SecurityNext): Promise<void> {
     const origin = context.headers["origin"];

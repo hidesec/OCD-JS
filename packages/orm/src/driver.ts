@@ -717,7 +717,28 @@ export class SqliteDatabaseDriver implements DatabaseDriver {
   }
 
   private canCompilePlan(plan: QueryPlan): boolean {
-    return plan.filters.every((filter) => this.canCompileFilter(filter));
+    const scalarFiltersValid = plan.filters.every((filter) =>
+      this.canCompileFilter(filter),
+    );
+    const havingValid = (plan.having ?? []).every((filter) =>
+      this.canCompileFilter(filter),
+    );
+    const selectFieldsValid = (plan.select ?? []).every(
+      (selection) => selection.field && !selection.field.includes("."),
+    );
+    const groupFieldsValid = (plan.groupBy ?? []).every(
+      (field) => !field.includes("."),
+    );
+    const aggregateFieldsValid = (plan.aggregates ?? []).every(
+      (aggregate) => !aggregate.field || !aggregate.field.includes("."),
+    );
+    return (
+      scalarFiltersValid &&
+      havingValid &&
+      selectFieldsValid &&
+      groupFieldsValid &&
+      aggregateFieldsValid
+    );
   }
 
   private canCompileFilter(filter: QueryPlan["filters"][number]): boolean {
@@ -742,17 +763,59 @@ export class SqliteDatabaseDriver implements DatabaseDriver {
     const where = whereClauses.length
       ? ` WHERE ${whereClauses.join(" AND ")}`
       : "";
+    const selectClause = this.buildSelectClause(plan);
     const order = plan.orderBy
       ? ` ORDER BY ${quoteIdent(plan.orderBy.field)} ${
           plan.orderBy.direction?.toUpperCase() === "DESC" ? "DESC" : "ASC"
         }`
       : "";
+    const group = plan.groupBy?.length
+      ? ` GROUP BY ${plan.groupBy.map(quoteIdent).join(",")}`
+      : "";
+    const havingClauses: string[] = [];
+    for (const filter of plan.having ?? []) {
+      const clause = this.buildFilterClause(filter, params);
+      if (clause) {
+        havingClauses.push(clause);
+      }
+    }
+    const having = havingClauses.length
+      ? ` HAVING ${havingClauses.join(" AND ")}`
+      : "";
     const limit =
       plan.limit !== undefined ? ` LIMIT ${Number(plan.limit)}` : "";
     const offset =
       plan.offset !== undefined ? ` OFFSET ${Number(plan.offset)}` : "";
-    const sql = `SELECT * FROM ${quoteIdent(plan.table)}${where}${order}${limit}${offset}`;
+    const sql = `SELECT ${selectClause} FROM ${quoteIdent(plan.table)}${where}${group}${having}${order}${limit}${offset}`;
     return { sql, params };
+  }
+
+  private buildSelectClause(plan: QueryPlan): string {
+    const columns: string[] = [];
+    if (plan.select?.length) {
+      columns.push(
+        ...plan.select.map((selection) => {
+          const column = quoteIdent(selection.field);
+          return selection.alias
+            ? `${column} AS ${quoteIdent(selection.alias)}`
+            : column;
+        }),
+      );
+    } else if (plan.groupBy?.length || plan.aggregates?.length) {
+      columns.push(...(plan.groupBy ?? []).map(quoteIdent));
+    } else {
+      columns.push("*");
+    }
+    if (plan.aggregates?.length) {
+      columns.push(
+        ...plan.aggregates.map((aggregate) => {
+          const field = aggregate.field ? quoteIdent(aggregate.field) : "*";
+          const distinct = aggregate.distinct ? "DISTINCT " : "";
+          return `${aggregate.fn.toUpperCase()}(${distinct}${field}) AS ${quoteIdent(aggregate.alias)}`;
+        }),
+      );
+    }
+    return columns.join(", ");
   }
 
   private buildFilterClause(

@@ -3,7 +3,7 @@ import { AuthService } from "../auth.service";
 import { POLICY_REGISTRY } from "../tokens";
 import { AuthenticatedUser, PolicyHandler } from "../interfaces";
 
-@Injectable()
+@Injectable({ deps: [AuthService, POLICY_REGISTRY] })
 export class PolicyGuard implements Guard {
   constructor(
     private readonly auth: AuthService,
