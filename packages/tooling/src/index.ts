@@ -35,7 +35,8 @@ export const analyzeWorkspace = (
       current,
       recommended: range,
       action:
-        current && !isFileProtocol &&
+        current &&
+        !isFileProtocol &&
         semver.satisfies(semver.minVersion(current) ?? "0.0.0", range)
           ? "ok"
           : "upgrade",

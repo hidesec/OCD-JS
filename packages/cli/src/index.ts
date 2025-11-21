@@ -1159,11 +1159,7 @@ const projectPackageJson = (slug: string) => `{
     "test": "node --loader ts-node/esm --test ./src/**/*.spec.ts",
     "format": "prettier --write ./src/**/*.ts"
   },
-  "dependencies": {
-    "@ocd-js/core": "^1.1.2-beta",
-    "@ocd-js/governance": "^1.1.2-beta",
-    "@ocd-js/security": "^1.1.2-beta"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.11.24",
     "@typescript-eslint/eslint-plugin": "^8.2.0",
@@ -1193,78 +1189,41 @@ const projectTsconfig = () => `{
 }
 `;
 
-const projectRootModuleTemplate = () => `import { Module } from "@ocd-js/core";
-import { GovernanceModule } from "@ocd-js/governance";
-import { SecurityModule } from "@ocd-js/security";
-import { AppModule } from "./modules/app/app.module";
+const projectRootModuleTemplate =
+  () => `import { AppModule } from "./modules/app/app.module";
 
-@Module({
-  imports: [SecurityModule, GovernanceModule, AppModule],
-})
-export class RootModule {}
+export class RootModule {
+  static imports = [AppModule];
+}
 `;
 
 const projectFeatureModuleTemplate =
-  () => `import { Module } from "@ocd-js/core";
-import { AppController } from "./app.controller";
+  () => `import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 
-@Module({
-  controllers: [AppController],
-  providers: [AppService],
-})
-export class AppModule {}
+export class AppModule {
+  static controllers = [AppController];
+  static providers = [AppService];
+}
 `;
 
-const projectAppServiceTemplate =
-  () => `import { Inject, Injectable } from "@ocd-js/core";
-import {
-  POLICY_SERVICE,
-  PolicyService,
-  OWASP_TOP10_BUNDLE,
-} from "@ocd-js/governance";
-
-@Injectable()
-export class AppService {
-  constructor(
-    @Inject(POLICY_SERVICE) private readonly policyService: PolicyService,
-  ) {}
-
+const projectAppServiceTemplate = () => `export class AppService {
   async getStatus() {
-    const policy = await this.policyService.evaluate(OWASP_TOP10_BUNDLE);
     return {
       message: "Hello from OCD-JS",
-      policy,
-      checkedAt: new Date().toISOString(),
+      status: "ready",
+      timestamp: new Date().toISOString(),
     };
   }
 }
 `;
 
 const projectAppControllerTemplate =
-  () => `import { Controller, Get, Inject } from "@ocd-js/core";
-import {
-  UseSecurity,
-  AdaptiveRateLimiter,
-  AuditLogger,
-  CorsGuard,
-  CsrfProtector,
-  InputSanitizer,
-} from "@ocd-js/security";
-import { AppService } from "./app.service";
+  () => `import { AppService } from "./app.service";
 
-@Controller({ basePath: "/hello", version: "v1" })
 export class AppController {
-  constructor(@Inject(AppService) private readonly service: AppService) {}
+  constructor(private readonly service: AppService) {}
 
-  @Get("/")
-  @UseSecurity(
-    AdaptiveRateLimiter,
-    InputSanitizer,
-    CorsGuard,
-    CsrfProtector,
-    AuditLogger,
-  )
   async readStatus() {
     return this.service.getStatus();
   }
@@ -1280,27 +1239,26 @@ bootstrap().catch((error) => {
 `;
 
 const projectBootstrapTemplate =
-  () => `import { createApplicationContext } from "@ocd-js/core";
-import { RootModule } from "./root.module";
+  () => `import { RootModule } from "./root.module";
 
 export async function bootstrap() {
-  const app = createApplicationContext(RootModule);
-  console.log("Available routes", app.routes);
+  console.log("OCD-JS Application Starting...");
+  console.log("Root module:", RootModule);
+  console.log("Ready to add @ocd-js packages when they are published!");
 }
 `;
 
 const projectAppControllerSpecTemplate = () => `import test from "node:test";
 import assert from "node:assert/strict";
-import { createApplicationContext } from "@ocd-js/core";
-import { RootModule } from "../../root.module";
 import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
 
-test("AppController returns policy-aware status", async () => {
-  const context = createApplicationContext(RootModule);
-  const controller = context.container.resolve(AppController);
+test("AppController returns status", async () => {
+  const service = new AppService();
+  const controller = new AppController(service);
   const result = await controller.readStatus();
   assert.equal(result.message, "Hello from OCD-JS");
-  assert.equal(result.policy.bundle, "owasp-top10");
+  assert.equal(result.status, "ready");
 });
 `;
 
