@@ -71,14 +71,18 @@ export const registerEntity = (target: Function, tableName?: string) => {
   }
 };
 
+const ensureEntityMetadata = (target: Function): EntityMetadata => {
+  if (!entityRegistry.has(target)) {
+    registerEntity(target);
+  }
+  return entityRegistry.get(target)!;
+};
+
 export const setEntityCacheOptions = (
   target: Function,
   options: EntityCacheOptions,
 ) => {
-  const metadata = entityRegistry.get(target);
-  if (!metadata) {
-    throw new Error(`@CacheEntity used before @Entity on ${target.name}`);
-  }
+  const metadata = ensureEntityMetadata(target);
   metadata.cache = {
     enabled: options.enabled ?? true,
     ttl: options.ttl,
@@ -90,10 +94,7 @@ export const registerUniqueConstraint = (
   columns: string[],
   name?: string,
 ) => {
-  const metadata = entityRegistry.get(target);
-  if (!metadata) {
-    throw new Error(`@Unique used before @Entity on ${target.name}`);
-  }
+  const metadata = ensureEntityMetadata(target);
   metadata.uniqueConstraints.push({ name, columns });
 };
 
@@ -101,10 +102,7 @@ export const registerForeignKey = (
   target: Function,
   foreignKey: ForeignKeyMetadata,
 ) => {
-  const metadata = entityRegistry.get(target);
-  if (!metadata) {
-    throw new Error(`Foreign key defined before @Entity on ${target.name}`);
-  }
+  const metadata = ensureEntityMetadata(target);
   metadata.foreignKeys.push(foreignKey);
 };
 
@@ -113,12 +111,7 @@ export const registerColumn = (
   propertyKey: string,
   options: ColumnOptions,
 ) => {
-  const metadata = entityRegistry.get(target);
-  if (!metadata) {
-    throw new Error(
-      `Column decorator used before @Entity on ${target.name}.${propertyKey}`,
-    );
-  }
+  const metadata = ensureEntityMetadata(target);
   const column: ColumnMetadata = {
     propertyKey,
     options,

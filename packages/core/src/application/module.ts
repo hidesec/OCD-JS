@@ -99,14 +99,17 @@ const collectManifests = (
 
 const collectProviders = (manifests: ModuleManifest[]): Provider[] => {
   const providers: Provider[] = [];
-  manifests.forEach((manifest) => {
-    manifest.providers.forEach((providerLike) => {
-      providers.push(normalizeProvider(providerLike));
+  manifests
+    .slice()
+    .reverse()
+    .forEach((manifest) => {
+      manifest.providers.forEach((providerLike) => {
+        providers.push(normalizeProvider(providerLike));
+      });
+      manifest.controllers.forEach((controller) => {
+        providers.push(provideFromClass(controller));
+      });
     });
-    manifest.controllers.forEach((controller) => {
-      providers.push(provideFromClass(controller));
-    });
-  });
   return dedupeProviders(providers);
 };
 

@@ -13,6 +13,8 @@
     { "path": "../../packages/plugins" },
     { "path": "../../packages/integrations" },
     { "path": "../../packages/governance" },
-    { "path": "../../packages/feature-flags" }
+    { "path": "../../packages/feature-flags" },
+    { "path": "../../packages/orm" },
+    { "path": "../../packages/server" }
   ]
 }

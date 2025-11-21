@@ -29,12 +29,14 @@ export const analyzeWorkspace = (
   const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
   const entries = Object.entries(recommended).map(([name, range]) => {
     const current = deps[name];
+    const isFileProtocol = current?.startsWith("file:");
     return {
       name,
       current,
       recommended: range,
       action:
         current &&
+        !isFileProtocol &&
         semver.satisfies(semver.minVersion(current) ?? "0.0.0", range)
           ? "ok"
           : "upgrade",

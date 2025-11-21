@@ -1,8 +1,13 @@
 {
   "name": "ocd-js",
   "private": false,
-  "version": "1.1.2-beta",
-  "description": "Opinionated backend framework workspace for OCD-JS",
+  "version": "1.1.5-beta",
+  "description": "Opinionated TypeScript backend framework with decorator-first APIs, dependency injection, and batteries-included tooling",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "ocd": "./packages/cli/dist/index.js"
+  },
   "scripts": {
     "build": "tsc -b",
     "lint": "prettier --write \"{examples,packages}/**/*.ts\" && tsc -b --pretty false",
@@ -10,16 +15,58 @@
     "dev": "ocd-dev --entry dist/examples/server/src/main.js --watch examples/server/src",
     "docs": "ocd-docs --module examples/server/dist/user/user.module.js"
   },
+  "keywords": [
+    "typescript",
+    "backend",
+    "framework",
+    "decorators",
+    "dependency-injection",
+    "rest-api",
+    "express",
+    "security",
+    "observability",
+    "orm",
+    "cli"
+  ],
+  "author": "OCD-JS Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hidesec/ocd-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hidesec/ocd-js/issues"
+  },
+  "homepage": "https://github.com/hidesec/ocd-js#readme",
   "workspaces": {
     "packages": [
       "packages/*",
       "examples/*"
     ]
   },
+  "dependencies": {
+    "@ocd-js/cli": "file:./packages/cli",
+    "@ocd-js/core": "file:./packages/core",
+    "@ocd-js/auth": "file:./packages/auth",
+    "@ocd-js/security": "file:./packages/security",
+    "@ocd-js/observability": "file:./packages/observability",
+    "@ocd-js/performance": "file:./packages/performance",
+    "@ocd-js/plugins": "file:./packages/plugins",
+    "@ocd-js/integrations": "file:./packages/integrations",
+    "@ocd-js/governance": "file:./packages/governance",
+    "@ocd-js/feature-flags": "file:./packages/feature-flags",
+    "@ocd-js/orm": "file:./packages/orm",
+    "@ocd-js/server": "file:./packages/server",
+    "@ocd-js/testing": "file:./packages/testing",
+    "@ocd-js/dev-server": "file:./packages/dev-server",
+    "@ocd-js/tooling": "file:./packages/tooling",
+    "@ocd-js/contract-testing": "file:./packages/contract-testing"
+  },
   "devDependencies": {
     "@types/node": "^20.11.24",
     "@types/sql.js": "^1.4.9",
     "prettier": "^3.3.2",
+    "supertest": "^6.3.4",
     "typescript": "^5.4.5"
   }
 }

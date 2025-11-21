@@ -1,0 +1,19 @@
+{
+  "name": "@ocd-js/server",
+  "version": "1.1.2-beta",
+  "description": "First-party HTTP adapters for OCD-JS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@ocd-js/core": "file:../core",
+    "@ocd-js/security": "file:../security",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21"
+  }
+}

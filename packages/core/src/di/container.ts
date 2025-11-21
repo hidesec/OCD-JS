@@ -106,7 +106,14 @@ export class Container {
       return provider.useFactory({ container: this });
     }
     if (provider.useClass) {
-      const deps = (provider.deps ?? []).map((token) => this.resolve(token));
+      const deps = (provider.deps ?? []).map((token, index) => {
+        if (!token) {
+          throw new Error(
+            `Provider ${describeToken(provider.token)} is missing dependency token at index ${index}`,
+          );
+        }
+        return this.resolve(token);
+      });
       return new provider.useClass(...deps);
     }
     throw new Error(`Provider for ${describeToken(provider.token)} is invalid`);
