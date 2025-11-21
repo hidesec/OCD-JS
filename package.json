@@ -1,7 +1,7 @@
 {
   "name": "ocd-js",
   "private": false,
-  "version": "1.1.3-beta",
+  "version": "1.1.4-beta",
   "description": "Opinionated backend framework workspace for OCD-JS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
