@@ -1,0 +1,17 @@
+{
+  "name": "@ocd-js/example-core",
+  "version": "1.1.2-beta",
+  "private": true,
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@ocd-js/core": "file:../../packages/core"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19"
+  }
+}

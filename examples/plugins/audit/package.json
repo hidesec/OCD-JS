@@ -1,0 +1,16 @@
+{
+  "name": "@ocd-js/example-audit-plugin",
+  "version": "1.1.1-beta",
+  "private": true,
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@ocd-js/core": "file:../../../packages/core",
+    "@ocd-js/observability": "file:../../../packages/observability",
+    "@ocd-js/plugins": "file:../../../packages/plugins"
+  }
+}

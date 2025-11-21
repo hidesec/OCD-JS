@@ -1,0 +1,1 @@
+export const FEATURE_REGISTRY = Symbol("FEATURE_REGISTRY");

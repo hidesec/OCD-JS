@@ -23,6 +23,7 @@ import { AuditPlugin } from "./plugins/audit.plugin";
 import { AppModule } from "./user/user.module";
 import { UserController } from "./user/user.controller";
 import { CreateUserInput } from "./user/dto/create-user.dto";
+import { runOrmWorkflow } from "./user/orm-demo";
 import {
   POLICY_SERVICE,
   OWASP_TOP10_BUNDLE,
@@ -62,8 +63,8 @@ async function main() {
   pluginManager.register(AuditPlugin);
   await pluginManager.bootstrap(request.container);
 
-  logger.withCorrelation("demo-correlation", () => {
-    logger.info("Bootstrapped example server");
+  logger.withCorrelation("server-correlation", () => {
+    logger.info("Bootstrapped reference server");
   });
 
   console.log(controller.list());
@@ -109,9 +110,11 @@ async function main() {
   console.log("release checklist", await checklist.run());
 
   console.log("beta flag enabled", featureFlags.isEnabled("beta-users"));
+
+  await runOrmWorkflow(logger);
 }
 
 main().catch((error) => {
-  console.error("Example server failed", error);
+  console.error("Server bootstrap failed", error);
   process.exit(1);
 });
