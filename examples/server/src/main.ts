@@ -2,6 +2,7 @@ import {
   applyValidationEnhancers,
   createApplicationContext,
 } from "@ocd-js/core";
+import { ExpressHttpAdapter } from "@ocd-js/server";
 import { resolveSecurityTokens } from "@ocd-js/security";
 import {
   LOGGER,
@@ -34,6 +35,7 @@ import {
   FEATURE_FLAG_SERVICE,
   FeatureFlagService,
 } from "@ocd-js/feature-flags";
+import type { AddressInfo } from "node:net";
 
 async function main() {
   const app = createApplicationContext(AppModule);
@@ -110,6 +112,25 @@ async function main() {
   console.log("release checklist", await checklist.run());
 
   console.log("beta flag enabled", featureFlags.isEnabled("beta-users"));
+
+  const httpAdapter = new ExpressHttpAdapter({ module: AppModule });
+  const previewServer = httpAdapter.getApp().listen(0);
+  await new Promise<void>((resolve) =>
+    previewServer.once("listening", resolve),
+  );
+  const address = previewServer.address();
+  if (address && typeof address === "object") {
+    const { port } = address as AddressInfo;
+    logger.info("Express adapter online", {
+      port,
+      endpoints: httpAdapter.getRoutes().map((route) => ({
+        method: route.method,
+        path: route.path,
+      })),
+    });
+    console.log(`HTTP adapter listening on port ${port}`);
+  }
+  previewServer.close();
 
   await runOrmWorkflow(logger);
 }

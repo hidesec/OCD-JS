@@ -1,7 +1,7 @@
 import { Guard, GuardContext, Injectable } from "@ocd-js/core";
 import { AuthService } from "../auth.service";
 
-@Injectable()
+@Injectable({ deps: [AuthService] })
 export class AuthGuard implements Guard {
   constructor(private readonly auth: AuthService) {}
 

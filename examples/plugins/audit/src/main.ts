@@ -22,7 +22,7 @@ async function bootstrap() {
   audit.captureEvent("user.login", { userId: "u-1", secret: "top" });
   audit.captureEvent("user.update", { userId: "u-1", field: "email" });
 
-  logger.info("registered plugins", plugins.list());
+  logger.info("registered plugins", { plugins: plugins.list() });
 
   await plugins.shutdown(app.container);
 }

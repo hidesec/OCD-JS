@@ -78,7 +78,11 @@ export class PluginManager {
 
   private ensureCompatibility(metadata: PluginMetadata) {
     const range = metadata.compatibility?.core ?? "*";
-    if (!semver.satisfies(this.options.coreVersion, range)) {
+    if (
+      !semver.satisfies(this.options.coreVersion, range, {
+        includePrerelease: true,
+      })
+    ) {
       throw new Error(
         `Plugin ${metadata.name}@${metadata.version} incompatible with core ${this.options.coreVersion} (expects ${range})`,
       );

@@ -13,8 +13,11 @@ export class TransactionWorkflowService {
   @Transactional({ transaction: { identityScope: "isolated" } })
   async elevateUserTier(
     userId: string,
-    manager: EntityManager,
+    manager?: EntityManager,
   ): Promise<OrmUserEntity | null> {
+    if (!manager) {
+      throw new Error("EntityManager instance is required");
+    }
     const userRepo = manager.getRepository(OrmUserEntity);
     const orderRepo = manager.getRepository(OrmOrderEntity);
     const user = await userRepo.findOne({ where: { id: userId } });
@@ -61,8 +64,11 @@ export class TransactionWorkflowService {
   @UnitOfWorkBoundary()
   async batchStatusSync(
     userIds: string[],
-    unitOfWork: UnitOfWork,
+    unitOfWork?: UnitOfWork,
   ): Promise<void> {
+    if (!unitOfWork) {
+      throw new Error("UnitOfWork instance is required");
+    }
     const userRepo = unitOfWork.getRepository(OrmUserEntity);
     for (const id of userIds) {
       const user = await userRepo.findOne({ where: { id } });
@@ -77,8 +83,11 @@ export class TransactionWorkflowService {
   @UnitOfWorkBoundary()
   async batchSyncWithRollback(
     userIds: string[],
-    unitOfWork: UnitOfWork,
+    unitOfWork?: UnitOfWork,
   ): Promise<void> {
+    if (!unitOfWork) {
+      throw new Error("UnitOfWork instance is required");
+    }
     const userRepo = unitOfWork.getRepository(OrmUserEntity);
     for (const id of userIds) {
       const user = await userRepo.findOne({ where: { id } });

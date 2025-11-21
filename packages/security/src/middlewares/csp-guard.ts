@@ -13,7 +13,13 @@ export interface CspOptions {
 export class CspGuard implements SecurityMiddleware {
   public readonly name = "CspGuard";
 
-  constructor(private readonly options: CspOptions) {}
+  constructor(
+    private readonly options: CspOptions = {
+      directives: {
+        "default-src": ["'self'"],
+      },
+    },
+  ) {}
 
   async handle(context: SecurityContext, next: SecurityNext): Promise<void> {
     const headerValue = Object.entries(this.options.directives)

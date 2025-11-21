@@ -9,11 +9,15 @@ import {
   registerQueryInstrumentation,
   withSecondLevelCache,
   getIdentityEntry,
+  MigrationRunner,
+  SeedRunner,
 } from "@ocd-js/orm";
 import { OrmOrderEntity, OrmUserEntity } from "./entities";
 import { summarizeQueryMetrics } from "./reports";
 import { LifecycleAuditListeners } from "./services/lifecycle.audit";
 import { TransactionWorkflowService } from "./services/workflow.service";
+import "./migrations/order-metrics.migration";
+import "./seeds/core.seed";
 
 class TrackedMemoryDriver extends MemoryDatabaseDriver {
   public readCount = 0;
@@ -22,18 +26,22 @@ class TrackedMemoryDriver extends MemoryDatabaseDriver {
     super();
   }
 
-  async readTable(name: string) {
+  async readTable<T>(name: string): Promise<T[]> {
     this.readCount += 1;
-    return super.readTable(name);
+    return super.readTable<T>(name);
   }
 }
 
 async function bootstrap() {
   const baseDriver = new TrackedMemoryDriver();
+  const migrationRunner = new MigrationRunner(baseDriver);
+  await migrationRunner.run("up");
   const connection = new Connection({
     driver: withSecondLevelCache(baseDriver, { defaultTtl: 2500 }),
   });
   await connection.initialize();
+  const seedRunner = new SeedRunner(connection);
+  await seedRunner.run();
 
   const metrics: QueryPlanMetricsPayload[] = [];
   const unregisterMetrics = registerQueryInstrumentation((payload) => {
@@ -52,31 +60,13 @@ async function bootstrap() {
   const orderRepo = connection.getRepository(OrmOrderEntity);
   const workflow = new TransactionWorkflowService(connection);
 
-  const [basicUser, proUser] = await connection.transaction(async (manager) => {
-    const users: OrmUserEntity[] = [];
-    const scopedUsers = manager.getRepository(OrmUserEntity);
-    const scopedOrders = manager.getRepository(OrmOrderEntity);
-    for (const [index, plan] of ["basic", "pro"].entries()) {
-      const user = scopedUsers.create({
-        id: randomUUID(),
-        email: `${plan}+${index}@orm.demo`,
-        status: plan === "pro" ? "vip" : "active",
-        createdAt: new Date(Date.now() - index * 86_400_000),
-      });
-      const persisted = await scopedUsers.save(user);
-      users.push(persisted);
-      await scopedOrders.save(
-        scopedOrders.create({
-          id: randomUUID(),
-          sku: `${plan}-starter`,
-          amount: plan === "pro" ? 149 : 29,
-          purchasedAt: new Date(),
-          user: persisted,
-        }),
-      );
-    }
-    return users;
+  const basicUser = await userRepo.findOne({
+    where: { email: "basic@orm.demo" },
   });
+  const proUser = await userRepo.findOne({ where: { email: "pro@orm.demo" } });
+  if (!basicUser || !proUser) {
+    throw new Error("Seed data missing required baseline users");
+  }
 
   const dormantUser = await userRepo.save(
     userRepo.create({
@@ -131,13 +121,13 @@ async function bootstrap() {
 
   const usersWithLargeOrders = await userRepo
     .queryBuilder()
-    .whereRelation("orders", (order) => order.amount > 100)
+    .whereRelation("orders", (order: OrmOrderEntity) => order.amount > 100)
     .getMany();
 
   const consistentCustomers = await userRepo
     .queryBuilder()
     .leftJoin("orders")
-    .whereRelation("orders", (order) => order.amount >= 25, {
+    .whereRelation("orders", (order: OrmOrderEntity) => order.amount >= 25, {
       mode: "every",
     })
     .orderBy("email", "asc")
@@ -146,9 +136,37 @@ async function bootstrap() {
   const usersWithoutPurchases = await userRepo
     .queryBuilder()
     .leftJoin("orders")
-    .whereRelation("orders", (order) => order.amount > 0, { mode: "none" })
+    .whereRelation("orders", (order: OrmOrderEntity) => order.amount > 0, {
+      mode: "none",
+    })
     .orderBy("email", "asc")
     .getMany();
+
+  const revenueBySku = (await orderRepo
+    .queryBuilder()
+    .groupBy("sku")
+    .select("sku")
+    .selectAggregate("orderCount", "count")
+    .selectAggregate("totalAmount", "sum", "amount")
+    .having("orderCount", MoreThan(1))
+    .orderBy("totalAmount", "desc")
+    .getRawMany()) as Array<{
+    sku: string;
+    orderCount: number;
+    totalAmount: number;
+  }>;
+
+  await baseDriver.writeTable(
+    "order_metrics",
+    revenueBySku.map((entry) => ({
+      sku: entry.sku,
+      orderCount: entry.orderCount,
+      totalAmount: entry.totalAmount,
+      capturedAt: new Date().toISOString(),
+    })),
+  );
+
+  const metricsSnapshot = await baseDriver.readTable<any>("order_metrics");
 
   unregisterAfterLoad();
   unregisterMetrics();
@@ -201,6 +219,15 @@ async function bootstrap() {
     "users without purchases",
     usersWithoutPurchases.map((user) => user.email),
   );
+  console.log(
+    "revenue by sku",
+    revenueBySku.map((row) => ({
+      sku: row.sku,
+      total: row.totalAmount,
+      orders: row.orderCount,
+    })),
+  );
+  console.log("order metrics snapshot", metricsSnapshot);
   console.log("query metrics summary", summarizeQueryMetrics(metrics));
 }
 

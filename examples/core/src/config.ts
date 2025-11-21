@@ -7,7 +7,7 @@ const appEnv = defineEnvSchema({
   ENABLE_ANALYTICS: env.boolean({ default: true }),
 });
 
-export type AppConfig = InferEnv<typeof appEnv>;
+export type AppConfig = InferEnv<typeof appEnv.fields>;
 
 export const loadAppConfig = (): AppConfig =>
   loadConfig(appEnv, {

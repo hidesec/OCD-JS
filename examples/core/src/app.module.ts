@@ -1,4 +1,6 @@
 import { Module } from "@ocd-js/core";
+import { GovernanceModule } from "@ocd-js/governance";
+import { SecurityModule } from "@ocd-js/security";
 import { loadAppConfig } from "./config";
 import { ProjectController } from "./app.controller";
 import { ProjectService } from "./project.service";
@@ -17,6 +19,7 @@ const logger: AppLogger = {
 };
 
 @Module({
+  imports: [SecurityModule, GovernanceModule],
   providers: [
     ProjectService,
     AdminGuard,

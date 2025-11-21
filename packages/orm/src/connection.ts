@@ -235,8 +235,9 @@ export class Connection {
     driver: DatabaseDriver | TransactionDriver,
     identityMap: IdentityMap,
   ): EntityManager {
-    return new EntityManager((entity) =>
-      this.createRepository(entity, driver, identityMap),
+    return new EntityManager(
+      (entity) => this.createRepository(entity, driver, identityMap),
+      driver,
     );
   }
 
@@ -275,10 +276,15 @@ export class EntityManager {
     private readonly resolver: <T extends object>(
       entity: new () => T,
     ) => Repository<T>,
+    private readonly driver: DatabaseDriver | TransactionDriver,
   ) {}
 
   getRepository<T extends object>(entity: new () => T): Repository<T> {
     return this.resolver(entity);
+  }
+
+  getDriver(): DatabaseDriver | TransactionDriver {
+    return this.driver;
   }
 }
 

@@ -1,6 +1,12 @@
 import { QueryPlan } from "./query/criteria";
 
-export type QueryExecutionMode = "many" | "one" | "count" | "paginate";
+export type QueryExecutionMode =
+  | "many"
+  | "one"
+  | "count"
+  | "paginate"
+  | "raw-many"
+  | "raw-one";
 
 export type QueryScanType = "driverPushdown" | "tableScan";
 

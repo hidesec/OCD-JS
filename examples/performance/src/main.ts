@@ -29,9 +29,9 @@ class ReportService {
   private hitCounter = 0;
 
   @Cached({
-    key: (userId: string) => `report:${userId}`,
+    key: (...args: unknown[]) => `report:${String(args[0] ?? "unknown")}`,
     ttlMs: 1500,
-    tags: (report: UserReport) => report.tags,
+    tags: (report: unknown) => (report as UserReport)?.tags ?? [],
   })
   async getUserReport(userId: string): Promise<UserReport> {
     this.hitCounter += 1;

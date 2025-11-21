@@ -1,4 +1,10 @@
 import { Inject, Injectable } from "@ocd-js/core";
+import {
+  POLICY_SERVICE,
+  PolicyService,
+  PolicyResult,
+  OWASP_TOP10_BUNDLE,
+} from "@ocd-js/governance";
 import { randomUUID } from "node:crypto";
 import { AppConfig } from "./config";
 import { CreateProjectDto, ListProjectsQuery } from "./dtos";
@@ -14,16 +20,23 @@ export interface ProjectRecord {
   createdBy?: string;
 }
 
+const DEFAULT_LIST_QUERY: ListProjectsQuery = {
+  owner: undefined,
+  limit: undefined,
+};
+
 @Injectable()
 export class ProjectService {
   private readonly projects = new Map<string, ProjectRecord>();
+  private policySnapshot?: { report: PolicyResult; checkedAt: number };
 
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     @Inject(LOGGER) private readonly logger: AppLogger,
+    @Inject(POLICY_SERVICE) private readonly policyService: PolicyService,
   ) {}
 
-  listProjects(query: ListProjectsQuery = {}): ProjectRecord[] {
+  listProjects(query: ListProjectsQuery = DEFAULT_LIST_QUERY): ProjectRecord[] {
     const entries = Array.from(this.projects.values());
     const filtered = query.owner
       ? entries.filter((project) => project.owner === query.owner)
@@ -37,10 +50,11 @@ export class ProjectService {
     return limited;
   }
 
-  createProject(
+  async createProject(
     payload: CreateProjectDto,
     context: RequestContext,
-  ): ProjectRecord {
+  ): Promise<ProjectRecord> {
+    await this.ensureCompliant();
     const record: ProjectRecord = {
       id: randomUUID(),
       name: payload.name,
@@ -57,5 +71,27 @@ export class ProjectService {
       analyticsEnabled: this.config.ENABLE_ANALYTICS,
     });
     return record;
+  }
+
+  private async ensureCompliant(): Promise<void> {
+    const ttl = 5 * 60 * 1000;
+    if (
+      this.policySnapshot &&
+      Date.now() - this.policySnapshot.checkedAt < ttl
+    ) {
+      return;
+    }
+    const report = await this.policyService.evaluate(OWASP_TOP10_BUNDLE);
+    this.policySnapshot = { report, checkedAt: Date.now() };
+    this.logger.info("policy.snapshot", {
+      bundle: report.bundle,
+      passed: report.passed,
+      failures: report.failures,
+    });
+    if (!report.passed) {
+      throw new Error(
+        `Policy bundle ${report.bundle} failed for ${report.failures.join(",")}`,
+      );
+    }
   }
 }

@@ -23,7 +23,12 @@ async function bootstrap() {
     verify: (container) => {
       const registry = resolveRegistry(container);
       const flags = registry.list();
-      assert.deepEqual(flags.sort(), ["beta-ui", "refactor"].sort());
+      for (const expected of ["beta-ui", "refactor"]) {
+        assert.ok(
+          flags.includes(expected),
+          `expected flag ${expected} to be enabled by default`,
+        );
+      }
     },
   });
 

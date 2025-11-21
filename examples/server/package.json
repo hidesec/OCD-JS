@@ -14,6 +14,7 @@
     "@ocd-js/integrations": "file:../../packages/integrations",
     "@ocd-js/auth": "file:../../packages/auth",
     "@ocd-js/core": "file:../../packages/core",
+    "@ocd-js/server": "file:../../packages/server",
     "@ocd-js/security": "file:../../packages/security",
     "@ocd-js/governance": "file:../../packages/governance",
     "@ocd-js/feature-flags": "file:../../packages/feature-flags",

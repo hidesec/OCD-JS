@@ -72,7 +72,7 @@ async function runScenario(
   if (route.handlerKey === "list") {
     response = controller.list((validated.query ?? {}) as ListProjectsQuery);
   } else if (route.handlerKey === "create") {
-    response = controller.create(
+    response = await controller.create(
       validated.body as CreateProjectDto,
       requestScope.container.resolve(REQUEST_CONTEXT),
     );

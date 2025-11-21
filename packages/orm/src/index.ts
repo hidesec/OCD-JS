@@ -8,7 +8,7 @@ export * from "./query/criteria";
 export * from "./driver-registry";
 export * from "./repository";
 export * from "./query-builder";
-export * from "./migration";
+export * from "./migrations";
 export * from "./relations";
 export * from "./relations/lazy-reference";
 export * from "./schema/builder";
