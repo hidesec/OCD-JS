@@ -27,6 +27,10 @@ export interface ConnectionOptions {
   cache?: ConnectionCacheOptions;
 }
 
+export interface TransactionOptions {
+  identityScope?: "shared" | "isolated";
+}
+
 export class Connection {
   private readonly driver: DatabaseDriver;
   private readonly transactionContext =
@@ -74,9 +78,7 @@ export class Connection {
   async beginUnitOfWork(): Promise<UnitOfWork> {
     const tx = await this.driver.beginTransaction();
     const identityMap = new IdentityMap();
-    const manager = new EntityManager((entity) =>
-      this.createRepository(entity, tx, identityMap),
-    );
+    const manager = this.buildEntityManager(tx, identityMap);
     return new UnitOfWork(tx, (entity) => manager.getRepository(entity), {
       onCommit: async () => {
         this.identityMap.adoptFrom(identityMap);
@@ -90,44 +92,22 @@ export class Connection {
 
   async transaction<R>(
     handler: (manager: EntityManager) => Promise<R> | R,
+    options: TransactionOptions = {},
   ): Promise<R> {
     const active = this.transactionContext.getStore();
     if (active) {
-      return this.runNestedTransaction(active, handler);
+      return this.runNestedTransaction(active, handler, options);
     }
-    const tx = await this.driver.beginTransaction();
-    const identityMap = new IdentityMap();
-    const manager = new EntityManager((entity) =>
-      this.createRepository(entity, tx, identityMap),
-    );
-    const state: TransactionState = {
-      driver: tx,
-      manager,
-      savepointCounter: 0,
-      identityMap,
-    };
-    return this.transactionContext.run(state, async () => {
-      try {
-        const result = await handler(manager);
-        await tx.commit();
-        this.identityMap.adoptFrom(identityMap);
-        await emitOrmEvent("afterCommit", {
-          connection: this,
-          scope: "transaction",
-        });
-        return result;
-      } catch (error) {
-        await tx.rollback();
-        throw error;
-      }
-    });
+    return this.runRootTransaction(handler);
   }
 
   private async runNestedTransaction<R>(
     state: TransactionState,
     handler: (manager: EntityManager) => Promise<R> | R,
+    options: TransactionOptions,
   ): Promise<R> {
     const driver = state.driver;
+    const identityScope = options.identityScope ?? "shared";
     if (
       driver.createSavepoint &&
       driver.releaseSavepoint &&
@@ -136,9 +116,27 @@ export class Connection {
       state.savepointCounter += 1;
       const savepoint = `sp_${state.savepointCounter}`;
       await driver.createSavepoint(savepoint);
+      const identityMap =
+        identityScope === "isolated" ? new IdentityMap() : state.identityMap;
+      const manager =
+        identityScope === "isolated"
+          ? this.buildEntityManager(driver, identityMap)
+          : state.manager;
+      const nestedState: TransactionState = {
+        driver,
+        manager,
+        savepointCounter: state.savepointCounter,
+        identityMap,
+      };
       try {
-        const result = await handler(state.manager);
+        const result = await this.transactionContext.run(
+          nestedState,
+          async () => handler(manager),
+        );
         await driver.releaseSavepoint(savepoint);
+        if (identityScope === "isolated") {
+          state.identityMap.adoptFrom(identityMap);
+        }
         return result;
       } catch (error) {
         await driver.rollbackToSavepoint(savepoint);
@@ -231,6 +229,44 @@ export class Connection {
       (next) => this.createRepository(next, driver, identityMap),
       identityMap,
     );
+  }
+
+  private buildEntityManager(
+    driver: DatabaseDriver | TransactionDriver,
+    identityMap: IdentityMap,
+  ): EntityManager {
+    return new EntityManager((entity) =>
+      this.createRepository(entity, driver, identityMap),
+    );
+  }
+
+  private async runRootTransaction<R>(
+    handler: (manager: EntityManager) => Promise<R> | R,
+  ): Promise<R> {
+    const tx = await this.driver.beginTransaction();
+    const identityMap = new IdentityMap();
+    const manager = this.buildEntityManager(tx, identityMap);
+    const state: TransactionState = {
+      driver: tx,
+      manager,
+      savepointCounter: 0,
+      identityMap,
+    };
+    return this.transactionContext.run(state, async () => {
+      try {
+        const result = await handler(manager);
+        await tx.commit();
+        this.identityMap.adoptFrom(identityMap);
+        await emitOrmEvent("afterCommit", {
+          connection: this,
+          scope: "transaction",
+        });
+        return result;
+      } catch (error) {
+        await tx.rollback();
+        throw error;
+      }
+    });
   }
 }
 

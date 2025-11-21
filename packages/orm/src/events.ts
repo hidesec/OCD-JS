@@ -1,7 +1,14 @@
 import type { EntityMetadata } from "./metadata";
 import type { Connection } from "./connection";
+import type { EntityChangeSet } from "./entity-hooks";
 
-export type OrmEvent = "afterLoad" | "afterCommit";
+export type OrmEvent =
+  | "afterLoad"
+  | "afterCommit"
+  | "beforeEntityPersist"
+  | "afterEntityPersist"
+  | "beforeEntityRemove"
+  | "afterEntityRemove";
 
 export interface AfterLoadEvent {
   entity: object;
@@ -13,9 +20,23 @@ export interface AfterCommitEvent {
   scope: "transaction" | "unitOfWork";
 }
 
+export type LifecycleAction = "insert" | "update" | "remove";
+
+export interface EntityLifecycleEvent<T = any> {
+  entity: T;
+  metadata: EntityMetadata;
+  changeSet: EntityChangeSet<T>;
+  action: LifecycleAction;
+  timestamp: number;
+}
+
 export type OrmEventPayloads = {
   afterLoad: AfterLoadEvent;
   afterCommit: AfterCommitEvent;
+  beforeEntityPersist: EntityLifecycleEvent;
+  afterEntityPersist: EntityLifecycleEvent;
+  beforeEntityRemove: EntityLifecycleEvent;
+  afterEntityRemove: EntityLifecycleEvent;
 };
 
 export type OrmEventListener<K extends OrmEvent> = (
@@ -27,6 +48,10 @@ const listenerRegistry: {
 } = {
   afterLoad: new Set(),
   afterCommit: new Set(),
+  beforeEntityPersist: new Set(),
+  afterEntityPersist: new Set(),
+  beforeEntityRemove: new Set(),
+  afterEntityRemove: new Set(),
 };
 
 export const registerOrmEventListener = <K extends OrmEvent>(
@@ -85,3 +110,11 @@ export const AfterLoadListener = (): MethodDecorator =>
   createEventDecorator("afterLoad");
 export const AfterCommitListener = (): MethodDecorator =>
   createEventDecorator("afterCommit");
+export const BeforeEntityPersistListener = (): MethodDecorator =>
+  createEventDecorator("beforeEntityPersist");
+export const AfterEntityPersistListener = (): MethodDecorator =>
+  createEventDecorator("afterEntityPersist");
+export const BeforeEntityRemoveListener = (): MethodDecorator =>
+  createEventDecorator("beforeEntityRemove");
+export const AfterEntityRemoveListener = (): MethodDecorator =>
+  createEventDecorator("afterEntityRemove");

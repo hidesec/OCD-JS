@@ -253,6 +253,7 @@ export class QueryBuilder<T extends object> {
     let entities: T[] = [];
     let relationsLoaded = false;
     let error: unknown;
+    const joinTypeCounts = this.summarizeJoinTypes();
     try {
       const queried = await this.tryDriverQuery(plan);
       driverPushdown = queried !== null;
@@ -301,7 +302,12 @@ export class QueryBuilder<T extends object> {
         driverPushdown,
         relationsLoaded,
         joins: this.joinRequirements.length,
+        joinTypes: joinTypeCounts,
         filters: plan.filters.length,
+        relationFilters: this.relationFilters.length,
+        relationFilterModes: this.relationFilters.map((filter) => filter.mode),
+        requestedRelations: this.requestedRelations.size,
+        scanType: driverPushdown ? "driverPushdown" : "tableScan",
         timestamp,
         error,
       });
@@ -398,6 +404,16 @@ export class QueryBuilder<T extends object> {
     return paths;
   }
 
+  private summarizeJoinTypes(): { inner: number; left: number } {
+    return this.joinRequirements.reduce(
+      (acc, join) => {
+        acc[join.type] += 1;
+        return acc;
+      },
+      { inner: 0, left: 0 } as { inner: number; left: number },
+    );
+  }
+
   private buildQueryPlan(ignorePaging: boolean): QueryPlan {
     const filters = this.scalarConditions
       .filter(({ field }) => isSimpleField(field))
@@ -484,7 +500,7 @@ const evaluateRelationFilter = <T>(
     return !values.some((item) => filter.predicate(item));
   }
   if (!values.length) {
-    return filter.mode === "every" ? true : false;
+    return false;
   }
   const matched = values.filter((item) => filter.predicate(item));
   if (filter.mode === "every") {

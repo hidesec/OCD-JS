@@ -16,6 +16,7 @@ export * from "./schema/differ";
 export * from "./schema/utils";
 export * from "./schema/statements";
 export * from "./unit-of-work";
+export * from "./unit-of-work.decorator";
 export * from "./standalone";
 export * from "./transactional";
 export * from "./entity-hooks";

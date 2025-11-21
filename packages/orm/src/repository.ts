@@ -14,11 +14,10 @@ import { LazyReference } from "./relations/lazy-reference";
 import {
   EntityChangeSet,
   HookContextInput,
-  HookType,
   runEntityHooks,
 } from "./entity-hooks";
 import { IdentityMap } from "./identity-map";
-import { emitOrmEvent } from "./events";
+import { emitOrmEvent, EntityLifecycleEvent, LifecycleAction } from "./events";
 
 export class Repository<T extends object> {
   constructor(
@@ -55,21 +54,42 @@ export class Repository<T extends object> {
     const isUpdate = index >= 0;
     const previousRow = isUpdate ? { ...rows[index] } : undefined;
 
-    const invokeHooks = async (type: HookType) => {
-      const snapshot = this.toPlain(entity);
+    const lifecycleTimestamp = Date.now();
+    const beforeHookSnapshot = this.toPlain(entity);
+    if (isUpdate) {
       await runEntityHooks(
         entity,
-        type,
-        this.buildHookOptions(previousRow, snapshot, !isUpdate),
+        "beforeUpdate",
+        this.buildHookOptions(
+          previousRow,
+          beforeHookSnapshot,
+          false,
+          lifecycleTimestamp,
+        ),
       );
-    };
-
-    if (isUpdate) {
-      await invokeHooks("beforeUpdate");
     } else {
-      await invokeHooks("beforeInsert");
+      await runEntityHooks(
+        entity,
+        "beforeInsert",
+        this.buildHookOptions(
+          previousRow,
+          beforeHookSnapshot,
+          true,
+          lifecycleTimestamp,
+        ),
+      );
     }
-    await invokeHooks("validate");
+    const validationSnapshot = this.toPlain(entity);
+    await runEntityHooks(
+      entity,
+      "validate",
+      this.buildHookOptions(
+        previousRow,
+        validationSnapshot,
+        !isUpdate,
+        lifecycleTimestamp,
+      ),
+    );
 
     plain = this.toPlain(entity);
     this.ensurePrimaryValues(plain, primaryColumns);
@@ -78,34 +98,90 @@ export class Repository<T extends object> {
         (column) => row[column.propertyKey] === plain[column.propertyKey],
       ),
     );
+    const action: LifecycleAction = isUpdate ? "update" : "insert";
+    const lifecycleEvent = this.buildLifecycleEvent(
+      entity,
+      previousRow,
+      plain,
+      action,
+      lifecycleTimestamp,
+    );
     if (index >= 0) {
       rows[index] = plain;
     } else {
       rows.push(plain);
     }
+    await emitOrmEvent("beforeEntityPersist", lifecycleEvent);
     await this.driver.writeTable(this.metadata.tableName, rows);
     await this.syncManyToManyRelations(entity, plain);
     this.identityMap?.updateAfterPersist(this.metadata, entity, plain);
     if (this.identityMap) {
       this.resetLazyRelations(entity);
     }
-    return this.materialize(plain);
+    const materialized = this.materialize(plain);
+    const afterSnapshot = this.toPlain(materialized);
+    if (isUpdate) {
+      await runEntityHooks(
+        materialized,
+        "afterUpdate",
+        this.buildHookOptions(
+          previousRow,
+          afterSnapshot,
+          false,
+          lifecycleTimestamp,
+        ),
+      );
+    } else {
+      await runEntityHooks(
+        materialized,
+        "afterInsert",
+        this.buildHookOptions(
+          previousRow,
+          afterSnapshot,
+          true,
+          lifecycleTimestamp,
+        ),
+      );
+    }
+    await emitOrmEvent("afterEntityPersist", lifecycleEvent);
+    return materialized;
   }
 
   async delete(criteria: Partial<T>): Promise<void> {
     const rows = await this.driver.readTable<any>(this.metadata.tableName);
     const removed = rows.filter((row) => matches(row, criteria));
+    const pendingRemovals: Array<{
+      entity: T;
+      hookOptions: HookContextInput<T>;
+      lifecycleEvent: EntityLifecycleEvent<T>;
+    }> = [];
     for (const row of removed) {
       const entity = this.materialize(row);
-      await runEntityHooks(
-        entity,
-        "beforeRemove",
-        this.buildHookOptions(row, undefined, false),
+      const timestamp = Date.now();
+      const hookOptions = this.buildHookOptions(
+        row,
+        undefined,
+        false,
+        timestamp,
       );
-      this.identityMap?.evict(entity);
+      await runEntityHooks(entity, "beforeRemove", hookOptions);
+      const lifecycleEvent = this.buildLifecycleEvent(
+        entity,
+        row,
+        undefined,
+        "remove",
+        timestamp,
+      );
+      await emitOrmEvent("beforeEntityRemove", lifecycleEvent);
+      pendingRemovals.push({ entity, hookOptions, lifecycleEvent });
     }
     const filtered = rows.filter((row) => !matches(row, criteria));
     await this.driver.writeTable(this.metadata.tableName, filtered);
+    for (const removal of pendingRemovals) {
+      this.identityMap?.evict(removal.entity);
+      await runEntityHooks(removal.entity, "afterRemove", removal.hookOptions);
+      await emitOrmEvent("afterEntityRemove", removal.lifecycleEvent);
+    }
   }
 
   async find(options?: QueryOptions<T>): Promise<T[]> {
@@ -470,22 +546,21 @@ export class Repository<T extends object> {
     before: Record<string, unknown> | undefined,
     after: Record<string, unknown> | undefined,
     isNew: boolean,
+    timestamp: number,
   ): HookContextInput<T> {
     return {
       metadata: this.metadata,
       driver: this.driver,
       changeSet: this.buildChangeSet(before, after),
       isNew,
+      timestamp,
     };
   }
 
   private buildChangeSet(
     before?: Record<string, unknown>,
     after?: Record<string, unknown>,
-  ): EntityChangeSet<T> | undefined {
-    if (!before && !after) {
-      return undefined;
-    }
+  ): EntityChangeSet<T> {
     const keys = new Set<string>();
     this.metadata.columns.forEach((column) => keys.add(column.propertyKey));
     Object.keys(before ?? {}).forEach((key) => keys.add(key));
@@ -499,6 +574,22 @@ export class Repository<T extends object> {
       before: before ? ({ ...before } as Partial<T>) : undefined,
       after: after ? ({ ...after } as Partial<T>) : undefined,
       changedFields,
+    };
+  }
+
+  private buildLifecycleEvent(
+    entity: T,
+    before: Record<string, unknown> | undefined,
+    after: Record<string, unknown> | undefined,
+    action: LifecycleAction,
+    timestamp: number,
+  ): EntityLifecycleEvent<T> {
+    return {
+      entity,
+      metadata: this.metadata,
+      changeSet: this.buildChangeSet(before, after),
+      action,
+      timestamp,
     };
   }
   private async loadOneToMany(

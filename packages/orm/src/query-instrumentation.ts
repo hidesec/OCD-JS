@@ -2,6 +2,8 @@ import { QueryPlan } from "./query/criteria";
 
 export type QueryExecutionMode = "many" | "one" | "count" | "paginate";
 
+export type QueryScanType = "driverPushdown" | "tableScan";
+
 export interface QueryPlanMetricsPayload {
   plan: QueryPlan;
   operation: QueryExecutionMode;
@@ -12,7 +14,12 @@ export interface QueryPlanMetricsPayload {
   driverPushdown: boolean;
   relationsLoaded: boolean;
   joins: number;
+  joinTypes: { inner: number; left: number };
   filters: number;
+  relationFilters: number;
+  relationFilterModes: Array<"some" | "every" | "none">;
+  requestedRelations: number;
+  scanType: QueryScanType;
   timestamp: number;
   error?: unknown;
 }

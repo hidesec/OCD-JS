@@ -72,7 +72,9 @@ export const runOrmWorkflow = async (logger: StructuredLogger) => {
 
   logger.info("ORM workflow finished", {
     cachedReads: metrics.filter((m) => m.source === "driver").length,
-    driverPushdown: metrics.filter((m) => m.driverPushdown).length,
+    driverPushdown: metrics.filter((m) => m.scanType === "driverPushdown")
+      .length,
+    tableScans: metrics.filter((m) => m.scanType === "tableScan").length,
     operations: metrics.length,
     latestProfile: afterTransaction?.profile,
   });

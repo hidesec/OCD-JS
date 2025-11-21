@@ -21,6 +21,17 @@ export class UnitOfWork {
     return this.resolveRepository(entity);
   }
 
+  async run<R>(handler: (scope: UnitOfWork) => Promise<R> | R): Promise<R> {
+    try {
+      const result = await handler(this);
+      await this.commit();
+      return result;
+    } catch (error) {
+      await this.rollback();
+      throw error;
+    }
+  }
+
   async commit(): Promise<void> {
     if (this.completed) return;
     await this.driver.commit();

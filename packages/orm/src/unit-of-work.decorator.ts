@@ -1,24 +1,25 @@
-import type { Connection, TransactionOptions } from "./connection";
+import type { Connection } from "./connection";
 
-export interface TransactionalOptions {
+export interface UnitOfWorkBoundaryOptions {
   connection?: (instance: any) => Connection;
   connectionProperty?: string;
-  transaction?: TransactionOptions;
 }
 
-export const Transactional = (
-  options: TransactionalOptions = {},
+export const UnitOfWorkBoundary = (
+  options: UnitOfWorkBoundaryOptions = {},
 ): MethodDecorator => {
   return (target, propertyKey, descriptor) => {
     if (!descriptor || typeof descriptor.value !== "function") {
-      throw new Error("@Transactional can only decorate methods");
+      throw new Error("UnitOfWorkBoundary can only decorate methods");
     }
     const original = descriptor.value as (...args: unknown[]) => unknown;
     const resolveConnection = (instance: any): Connection => {
       if (options.connection) {
         const resolved = options.connection.call(instance, instance);
         if (!resolved) {
-          throw new Error("Transactional connection resolver returned null");
+          throw new Error(
+            "UnitOfWorkBoundary connection resolver returned null",
+          );
         }
         return resolved;
       }
@@ -26,17 +27,22 @@ export const Transactional = (
       const conn = instance[property];
       if (!conn) {
         throw new Error(
-          `Transactional decorator expects property "${property}" on target instance`,
+          `UnitOfWorkBoundary expects property "${property}" on target instance`,
         );
       }
       return conn;
     };
-    const wrapped = function (this: any, ...args: unknown[]) {
+    const wrapped = async function (this: any, ...args: unknown[]) {
       const connection = resolveConnection(this);
-      return connection.transaction(
-        (manager) => original.apply(this, [...args, manager]),
-        options.transaction,
-      );
+      const unitOfWork = await connection.beginUnitOfWork();
+      try {
+        const result = await original.apply(this, [...args, unitOfWork]);
+        await unitOfWork.commit();
+        return result;
+      } catch (error) {
+        await unitOfWork.rollback();
+        throw error;
+      }
     };
     descriptor.value = wrapped as unknown as typeof descriptor.value;
   };
