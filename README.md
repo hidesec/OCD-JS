@@ -200,6 +200,21 @@ class CreateUserDto {
   email!: string;
   age!: number;
 }
+```
+
+### Security Example
+
+```ts
+import { Controller, Post, ValidateBody } from "@ocd-js/core";
+import {
+  UseSecurity,
+  AdaptiveRateLimiter,
+  InputSanitizer,
+  CorsGuard,
+  CsrfProtector,
+  AuditLogger
+} from "@ocd-js/security";
+import { Authenticated, Roles } from "@ocd-js/auth";
 
 @Controller({ basePath: "/users", version: "1" })
 class UserController {
