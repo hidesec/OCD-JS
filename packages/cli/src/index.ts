@@ -62,7 +62,7 @@ program
   .option("--tag <tag>", "npm dist-tag to install (default: latest)", "latest")
   .option(
     "--packages <list>",
-    "Comma-separated list of packages to upgrade (defaults to @ocd-js/*)",
+    "Comma-separated list of packages to upgrade (defaults to ocd-js/*)",
   )
   .option("--dry-run", "Print the npm commands without executing them", false)
   .action(
@@ -510,7 +510,7 @@ const toCamelCase = (value: string) => {
 const moduleTemplate = (
   pascal: string,
   kebab: string,
-) => `import { Module } from "@ocd-js/core";
+) => `import { Module } from "ocd-js/core";
 import { ${pascal}Controller } from "./${kebab}.controller";
 import { ${pascal}Service } from "./${kebab}.service";
 
@@ -524,7 +524,7 @@ export class ${pascal}Module {}
 const serviceTemplate = (
   pascal: string,
   _kebab: string,
-) => `import { Injectable } from "@ocd-js/core";
+) => `import { Injectable } from "ocd-js/core";
 
 @Injectable()
 export class ${pascal}Service {
@@ -537,7 +537,7 @@ export class ${pascal}Service {
 const controllerTemplate = (
   pascal: string,
   kebab: string,
-) => `import { Controller, Get, Inject } from "@ocd-js/core";
+) => `import { Controller, Get, Inject } from "ocd-js/core";
 import { ${pascal}Service } from "./${kebab}.service";
 
 @Controller({ basePath: "/${kebab}" })
@@ -574,8 +574,8 @@ export * from "./${kebab}.types";
 const microserviceTemplate = (
   pascal: string,
   kebab: string,
-) => `import { Injectable, Module } from "@ocd-js/core";
-import { createApplicationContext } from "@ocd-js/core";
+) => `import { Injectable, Module } from "ocd-js/core";
+import { createApplicationContext } from "ocd-js/core";
 
 @Injectable()
 export class ${pascal}Worker {
@@ -604,7 +604,7 @@ const microserviceIndexTemplate = (
 const crudModuleTemplate = (
   pascal: string,
   kebab: string,
-) => `import { Module } from "@ocd-js/core";
+) => `import { Module } from "ocd-js/core";
 import { ${pascal}Controller } from "./${kebab}.controller";
 import { ${pascal}Service } from "./${kebab}.service";
 import { ${pascal}Repository } from "./domain/${kebab}.repository";
@@ -620,7 +620,7 @@ export class ${pascal}Module {}
 const crudServiceTemplate = (
   pascal: string,
   kebab: string,
-) => `import { Inject, Injectable } from "@ocd-js/core";
+) => `import { Inject, Injectable } from "ocd-js/core";
 import { ${pascal}Repository } from "./domain/${kebab}.repository";
 import {
   Create${pascal}Dto,
@@ -671,7 +671,7 @@ const crudControllerTemplate = (
   Put,
   ValidateBody,
   ValidateQuery,
-} from "@ocd-js/core";
+} from "ocd-js/core";
 import {
   AdaptiveRateLimiter,
   AuditLogger,
@@ -679,7 +679,7 @@ import {
   CsrfProtector,
   InputSanitizer,
   UseSecurity,
-} from "@ocd-js/security";
+} from "ocd-js/security";
 import {
   Create${pascal}Dto,
   Update${pascal}Dto,
@@ -780,7 +780,7 @@ const crudEntityTemplate = (
         `  @Column({ type: "${field.type}" })\n  ${field.property}!: ${mapCrudFieldTsType(field.type)};`,
     )
     .join("\n\n");
-  return `import { Column, Entity, PrimaryColumn } from "@ocd-js/orm";
+  return `import { Column, Entity, PrimaryColumn } from "ocd-js/orm";
 
 @Entity({ table: "${kebab}_records" })
 export class ${pascal}Entity {
@@ -801,8 +801,8 @@ const crudRepositoryTemplate = (
   fields: CrudFieldDefinition[],
 ) => {
   const searchCondition = buildSearchCondition(fields);
-  return `import { Injectable } from "@ocd-js/core";
-import { Connection, JsonDatabaseDriver } from "@ocd-js/orm";
+  return `import { Injectable } from "ocd-js/core";
+import { Connection, JsonDatabaseDriver } from "ocd-js/orm";
 import { List${pascal}Query } from "../dto";
 import { ${pascal}Entity } from "./${toKebabCase(pascal)}.entity";
 
@@ -867,7 +867,7 @@ const crudCreateDtoTemplate = (
   const classLines = fields.map(
     (field) => `  ${field.property}!: ${mapCrudFieldTsType(field.type)};`,
   );
-  return `import { ${imports.join(", ")} } from "@ocd-js/core";
+  return `import { ${imports.join(", ")} } from "ocd-js/core";
 
 export const create${pascal}Schema = object({
 ${schemaLines.map((line) => `  ${line}`).join("\n")}
@@ -897,7 +897,7 @@ const crudUpdateDtoTemplate = (
   const classLines = fields.map(
     (field) => `  ${field.property}?: ${mapCrudFieldTsType(field.type)};`,
   );
-  return `import { ${imports.join(", ")} } from "@ocd-js/core";
+  return `import { ${imports.join(", ")} } from "ocd-js/core";
 
 export const update${pascal}Schema = object({
 ${schemaLines.map((line) => `  ${line}`).join("\n")}
@@ -923,7 +923,7 @@ const crudQueryDtoTemplate = (
   const searchLine = searchable
     ? "  search: optional(string({ minLength: 1, maxLength: 120 })),\n"
     : "";
-  return `import { ${imports.join(", ")} } from "@ocd-js/core";
+  return `import { ${imports.join(", ")} } from "ocd-js/core";
 
 export const list${pascal}QuerySchema = object({
 ${searchLine}  limit: optional(number({ min: 1, max: 100 }), 20),
@@ -949,7 +949,7 @@ const crudSpecTemplate = (
   const updatePayload = buildSamplePayload(fields.slice(0, 1), "update");
   return `import test from "node:test";
 import assert from "node:assert/strict";
-import { createApplicationContext } from "@ocd-js/core";
+import { createApplicationContext } from "ocd-js/core";
 import { ${pascal}Module } from "./${kebab}.module";
 import { ${pascal}Service } from "./${kebab}.service";
 import { Create${pascal}Dto, Update${pascal}Dto } from "./dto";
@@ -1164,7 +1164,7 @@ const projectPackageJson = (slug: string) => `{
     "format": "prettier --write ./src/**/*.ts"
   },
   "dependencies": {
-    "ocd-js": "^1.1.5-beta"
+    "ocd-js": "^1.1.8-beta"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",
@@ -1195,8 +1195,7 @@ const projectTsconfig = () => `{
 }
 `;
 
-const projectRootModuleTemplate =
-  () => `import { Module } from "@ocd-js/core";
+const projectRootModuleTemplate = () => `import { Module } from "ocd-js/core";
 import { AppModule } from "./modules/app/app.module";
 
 @Module({
@@ -1206,7 +1205,7 @@ export class RootModule {}
 `;
 
 const projectFeatureModuleTemplate =
-  () => `import { Module } from "@ocd-js/core";
+  () => `import { Module } from "ocd-js/core";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 
@@ -1217,7 +1216,8 @@ import { AppService } from "./app.service";
 export class AppModule {}
 `;
 
-const projectAppServiceTemplate = () => `import { Injectable } from "@ocd-js/core";
+const projectAppServiceTemplate =
+  () => `import { Injectable } from "ocd-js/core";
 
 @Injectable()
 export class AppService {
@@ -1232,7 +1232,7 @@ export class AppService {
 `;
 
 const projectAppControllerTemplate =
-  () => `import { Controller, Get, Inject } from "@ocd-js/core";
+  () => `import { Controller, Get, Inject } from "ocd-js/core";
 import { AppService } from "./app.service";
 
 @Controller({ basePath: "/app", version: "1" })
@@ -1255,7 +1255,7 @@ bootstrap().catch((error) => {
 `;
 
 const projectBootstrapTemplate =
-  () => `import { ExpressHttpAdapter } from "@ocd-js/server";
+  () => `import { ExpressHttpAdapter } from "ocd-js/server";
 import { RootModule } from "./root.module";
 
 export async function bootstrap() {
@@ -1277,7 +1277,7 @@ export async function bootstrap() {
 
 const projectAppControllerSpecTemplate = () => `import test from "node:test";
 import assert from "node:assert/strict";
-import { createApplicationContext } from "@ocd-js/core";
+import { createApplicationContext } from "ocd-js/core";
 import { AppModule } from "./app.module";
 import { AppController } from "./app.controller";
 
@@ -1579,12 +1579,12 @@ const resolveUpgradePackages = (list?: string): string[] => {
       .filter(Boolean);
   }
   return [
-    "@ocd-js/core",
-    "@ocd-js/orm",
-    "@ocd-js/cli",
-    "@ocd-js/observability",
-    "@ocd-js/auth",
-    "@ocd-js/governance",
+    "ocd-js/core",
+    "ocd-js/orm",
+    "ocd-js/cli",
+    "ocd-js/observability",
+    "ocd-js/auth",
+    "ocd-js/governance",
   ];
 };
 

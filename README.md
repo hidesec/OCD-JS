@@ -52,8 +52,8 @@ npm run dev
 ### Minimal Example
 
 ```ts
-import { Module, Controller, Get, Injectable, Inject } from "@ocd-js/core";
-import { ExpressHttpAdapter } from "@ocd-js/server";
+import { Module, Controller, Get, Injectable, Inject } from "ocd-js/core";
+import { ExpressHttpAdapter } from "ocd-js/server";
 
 @Injectable()
 class HelloService {
@@ -86,10 +86,107 @@ const adapter = new ExpressHttpAdapter({
 adapter.getApp().listen(3000);
 ```
 
+### HTTP Methods (RESTful Routes)
+
+OCD-JS supports all standard HTTP methods with dedicated decorators:
+
+```ts
+import { Controller, Get, Post, Put, Patch, Del, Injectable, Inject } from "ocd-js/core";
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+@Injectable()
+class UserService {
+  private users: User[] = [];
+
+  findAll() {
+    return this.users;
+  }
+
+  findOne(id: string) {
+    return this.users.find(u => u.id === id);
+  }
+
+  create(data: Omit<User, 'id'>) {
+    const user = { id: Date.now().toString(), ...data };
+    this.users.push(user);
+    return user;
+  }
+
+  update(id: string, data: Partial<User>) {
+    const user = this.findOne(id);
+    if (user) Object.assign(user, data);
+    return user;
+  }
+
+  remove(id: string) {
+    const index = this.users.findIndex(u => u.id === id);
+    if (index > -1) this.users.splice(index, 1);
+    return { deleted: true };
+  }
+}
+
+@Controller({ basePath: "/users", version: "1" })
+class UserController {
+  constructor(@Inject(UserService) private userService: UserService) {}
+
+  // GET /v1/users - List all users
+  @Get("/")
+  list() {
+    return this.userService.findAll();
+  }
+
+  // GET /v1/users/:id - Get single user
+  @Get("/:id")
+  getOne(_query: unknown, context: { params: { id: string } }) {
+    const user = this.userService.findOne(context.params.id);
+    if (!user) throw new Error("User not found");
+    return user;
+  }
+
+  // POST /v1/users - Create new user
+  @Post("/")
+  create(body: { name: string; email: string }) {
+    return this.userService.create(body);
+  }
+
+  // PUT /v1/users/:id - Full update (replace entire resource)
+  @Put("/:id")
+  update(body: { name: string; email: string }, context: { params: { id: string } }) {
+    return this.userService.update(context.params.id, body);
+  }
+
+  // PATCH /v1/users/:id - Partial update (update specific fields)
+  @Patch("/:id")
+  partialUpdate(body: Partial<User>, context: { params: { id: string } }) {
+    return this.userService.update(context.params.id, body);
+  }
+
+  // DELETE /v1/users/:id - Delete user
+  @Del("/:id")
+  remove(_payload: unknown, context: { params: { id: string } }) {
+    return this.userService.remove(context.params.id);
+  }
+}
+```
+
+**Available HTTP Method Decorators:**
+- `@Get(path)` - GET requests (retrieve data)
+- `@Post(path)` - POST requests (create new resources)
+- `@Put(path)` - PUT requests (full replacement update)
+- `@Patch(path)` - PATCH requests (partial update)
+- `@Del(path)` - DELETE requests (remove resources)
+- `@Head(path)` - HEAD requests (headers only)
+- `@Options(path)` - OPTIONS requests (CORS preflight)
+
 ### Validation Example
 
 ```ts
-import { Controller, Post, ValidateBody, Dto, object, string, number } from "@ocd-js/core";
+import { Controller, Post, ValidateBody, Dto, object, string, number } from "ocd-js/core";
 
 const createUserSchema = object({
   name: string({ minLength: 2, maxLength: 50 }),
@@ -102,15 +199,6 @@ class CreateUserDto {
   name!: string;
   email!: string;
   age!: number;
-}
-
-@Controller({ basePath: "/users", version: "1" })
-class UserController {
-  @Post("/")
-  @ValidateBody(CreateUserDto)
-  create(body: CreateUserDto) {
-    return { success: true, user: body };
-  }
 }
 ```
 
@@ -127,6 +215,30 @@ import {
   AuditLogger
 } from "@ocd-js/security";
 import { Authenticated, Roles } from "@ocd-js/auth";
+
+@Controller({ basePath: "/users", version: "1" })
+class UserController {
+  @Post("/")
+  @ValidateBody(CreateUserDto)
+  create(body: CreateUserDto) {
+    return { success: true, user: body };
+  }
+}
+```
+
+### Security Example
+
+```ts
+import { Controller, Post, ValidateBody } from "ocd-js/core";
+import {
+  UseSecurity,
+  AdaptiveRateLimiter,
+  InputSanitizer,
+  CorsGuard,
+  CsrfProtector,
+  AuditLogger
+} from "ocd-js/security";
+import { Authenticated, Roles } from "ocd-js/auth";
 
 @Controller({ basePath: "/admin", version: "1" })
 class AdminController {
@@ -150,9 +262,9 @@ class AdminController {
 ### ORM Example
 
 ```ts
-import { Entity, PrimaryColumn, Column, Repository } from "@ocd-js/orm";
-import { Connection, JsonDatabaseDriver } from "@ocd-js/orm";
-import { Injectable } from "@ocd-js/core";
+import { Entity, PrimaryColumn, Column, Repository } from "ocd-js/orm";
+import { Connection, JsonDatabaseDriver } from "ocd-js/orm";
+import { Injectable } from "ocd-js/core";
 
 @Entity({ table: "users" })
 class User {
@@ -185,8 +297,8 @@ const users = await userRepo.find();
 ### Observability Example
 
 ```ts
-import { LOGGER } from "@ocd-js/observability";
-import { PROBE_REGISTRY, METRICS_REGISTRY } from "@ocd-js/observability";
+import { LOGGER } from "ocd-js/observability";
+import { PROBE_REGISTRY, METRICS_REGISTRY } from "ocd-js/observability";
 
 // Structured logging with correlation
 const logger = container.resolve(LOGGER);
