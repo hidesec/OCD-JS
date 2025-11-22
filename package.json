@@ -1,12 +1,100 @@
 {
   "name": "ocd-js",
   "private": false,
-  "version": "1.1.5-beta",
+  "version": "1.1.8-beta",
   "description": "Opinionated TypeScript backend framework with decorator-first APIs, dependency injection, and batteries-included tooling",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "ocd": "./packages/cli/dist/index.js"
+  },
+  "files": [
+    "dist",
+    "packages",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./core": {
+      "import": "./packages/core/dist/index.js",
+      "require": "./packages/core/dist/index.js",
+      "types": "./packages/core/dist/index.d.ts"
+    },
+    "./server": {
+      "import": "./packages/server/dist/index.js",
+      "require": "./packages/server/dist/index.js",
+      "types": "./packages/server/dist/index.d.ts"
+    },
+    "./auth": {
+      "import": "./packages/auth/dist/index.js",
+      "require": "./packages/auth/dist/index.js",
+      "types": "./packages/auth/dist/index.d.ts"
+    },
+    "./security": {
+      "import": "./packages/security/dist/index.js",
+      "require": "./packages/security/dist/index.js",
+      "types": "./packages/security/dist/index.d.ts"
+    },
+    "./observability": {
+      "import": "./packages/observability/dist/index.js",
+      "require": "./packages/observability/dist/index.js",
+      "types": "./packages/observability/dist/index.d.ts"
+    },
+    "./performance": {
+      "import": "./packages/performance/dist/index.js",
+      "require": "./packages/performance/dist/index.js",
+      "types": "./packages/performance/dist/index.d.ts"
+    },
+    "./orm": {
+      "import": "./packages/orm/dist/index.js",
+      "require": "./packages/orm/dist/index.js",
+      "types": "./packages/orm/dist/index.d.ts"
+    },
+    "./testing": {
+      "import": "./packages/testing/dist/index.js",
+      "require": "./packages/testing/dist/index.js",
+      "types": "./packages/testing/dist/index.d.ts"
+    },
+    "./plugins": {
+      "import": "./packages/plugins/dist/index.js",
+      "require": "./packages/plugins/dist/index.js",
+      "types": "./packages/plugins/dist/index.d.ts"
+    },
+    "./integrations": {
+      "import": "./packages/integrations/dist/index.js",
+      "require": "./packages/integrations/dist/index.js",
+      "types": "./packages/integrations/dist/index.d.ts"
+    },
+    "./feature-flags": {
+      "import": "./packages/feature-flags/dist/index.js",
+      "require": "./packages/feature-flags/dist/index.js",
+      "types": "./packages/feature-flags/dist/index.d.ts"
+    },
+    "./governance": {
+      "import": "./packages/governance/dist/index.js",
+      "require": "./packages/governance/dist/index.js",
+      "types": "./packages/governance/dist/index.d.ts"
+    },
+    "./dev-server": {
+      "import": "./packages/dev-server/dist/index.js",
+      "require": "./packages/dev-server/dist/index.js",
+      "types": "./packages/dev-server/dist/index.d.ts"
+    },
+    "./tooling": {
+      "import": "./packages/tooling/dist/index.js",
+      "require": "./packages/tooling/dist/index.js",
+      "types": "./packages/tooling/dist/index.d.ts"
+    },
+    "./contract-testing": {
+      "import": "./packages/contract-testing/dist/index.js",
+      "require": "./packages/contract-testing/dist/index.js",
+      "types": "./packages/contract-testing/dist/index.d.ts"
+    }
   },
   "scripts": {
     "build": "tsc -b",
