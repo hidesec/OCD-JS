@@ -1,6 +1,6 @@
 {
   "name": "@ocd-js/auth",
-  "version": "1.1.1-beta",
+  "version": "1.1.10-beta",
   "description": "Authentication module for OCD-JS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

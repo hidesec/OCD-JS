@@ -1,7 +1,7 @@
 {
   "name": "ocd-js",
   "private": false,
-  "version": "1.1.9-beta",
+  "version": "1.1.10-beta",
   "description": "Opinionated TypeScript backend framework with decorator-first APIs, dependency injection, and batteries-included tooling",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
