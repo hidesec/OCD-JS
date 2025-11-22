@@ -434,7 +434,7 @@ pm run test).
 4. Publish:
    ```bash
    npm publish --access public            # for stable versions
-   npm publish --access public --tag beta # for prereleases like 1.1.1-beta
+   npm publish --access public --tag beta # for prereleases like 1.1.10-beta
    ```
 5. Verify on npm (
 pm view ocd-js) and install in a fresh project.

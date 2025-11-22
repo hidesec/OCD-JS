@@ -10,10 +10,9 @@
   },
   "dependencies": {
     "@ocd-js/core": "file:../core",
-    "@ocd-js/security": "file:../security",
-    "express": "^4.19.2"
+    "@ocd-js/security": "file:../security"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21"
+    
   }
 }
