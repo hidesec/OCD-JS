@@ -1,10 +1,11 @@
-import express, {
-  type Express,
+import {
+  type AppLike,
   type NextFunction,
   type Request,
   type RequestHandler,
   type Response,
-} from "express";
+} from "./types";
+import { createHttpKernel } from "./http-kernel";
 import {
   type ApplicationContext,
   type CompiledRoute,
@@ -25,14 +26,14 @@ import {
 } from "@ocd-js/security";
 import { HTTP_REQUEST, HTTP_RESPONSE, type HttpRequest } from "./tokens";
 import {
-  type ExpressAdapterOptions,
+  type HttpAdapterOptions,
   type HttpContext,
   type VersioningStrategy,
 } from "./types";
 
 type GuardEnhancer = Extract<RouteEnhancer, { kind: "guard" }>;
 
-interface AdapterConfig extends ExpressAdapterOptions {
+interface AdapterConfig extends HttpAdapterOptions {
   globalPrefix: string;
   jsonLimit: string | number;
   versioning: VersioningStrategy;
@@ -40,18 +41,19 @@ interface AdapterConfig extends ExpressAdapterOptions {
   onError: (error: unknown, req: Request, res: Response) => void;
 }
 
-export class ExpressHttpAdapter {
+export class HttpAdapter {
   private readonly context: ApplicationContext;
-  private readonly app: Express;
+  private readonly app: AppLike;
   private readonly options: AdapterConfig;
   private serverStarted = false;
 
-  constructor(options: ExpressAdapterOptions) {
+  constructor(options: HttpAdapterOptions) {
     if (!options?.module) {
-      throw new Error("ExpressHttpAdapter requires a root module");
+      throw new Error("HttpAdapter requires a root module");
     }
     this.context = createApplicationContext(options.module);
-    this.app = options.app ?? express();
+    this.app =
+      options.app ?? createHttpKernel({ jsonLimit: options.jsonLimit });
     this.options = {
       ...options,
       globalPrefix: options.globalPrefix ?? "",
@@ -64,7 +66,7 @@ export class ExpressHttpAdapter {
           if (res.headersSent) {
             return;
           }
-          console.error("Express adapter error", error);
+          console.error("HTTP adapter error", error);
           res.status(500).json({ message: "Internal server error" });
         }),
     };
@@ -112,7 +114,7 @@ export class ExpressHttpAdapter {
     }) as any;
   }
 
-  getApp(): Express {
+  getApp(): AppLike {
     return this.app;
   }
 
@@ -157,7 +159,6 @@ export class ExpressHttpAdapter {
   }
 
   private configure(): void {
-    this.app.use(express.json({ limit: this.options.jsonLimit }));
     this.options.middlewares.forEach((middleware) => this.app.use(middleware));
     this.registerRoutes();
     this.app.use(
@@ -190,7 +191,7 @@ export class ExpressHttpAdapter {
         method
       ] as ((path: string, handler: RequestHandler) => void) | undefined;
       if (!registrar) {
-        throw new Error(`Express does not support HTTP method ${route.method}`);
+        throw new Error(`HTTP adapter does not support method ${route.method}`);
       }
       registrar.call(this.app, fullPath, handler);
     });
