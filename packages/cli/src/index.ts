@@ -1179,7 +1179,7 @@ const projectPackageJson = (slug: string) => `{
     "format": "prettier --write ./src/**/*.ts"
   },
   "dependencies": {
-    "ocd-js": "^1.1.8-beta"
+    "ocd-js": "^1.1.9-beta"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

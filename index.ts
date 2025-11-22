@@ -1,4 +1,4 @@
-export const version = "1.1.8-beta";
+export const version = "1.1.9-beta";
 
 export const packages = {
   core: "@ocd-js/core",
