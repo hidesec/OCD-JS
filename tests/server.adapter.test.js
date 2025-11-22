@@ -2,11 +2,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const request = require("supertest");
 const { createHmac } = require("node:crypto");
-const { ExpressHttpAdapter } = require("../packages/server/dist/index.js");
+const { HttpAdapter } = require("../packages/server/dist/index.js");
 const { AppModule } = require("../examples/server/dist/user/user.module.js");
 
-test("Express adapter handles GET and protected POST routes", async () => {
-  const adapter = new ExpressHttpAdapter({ module: AppModule });
+test("HTTP adapter handles GET and protected POST routes", async () => {
+  const adapter = new HttpAdapter({ module: AppModule });
   const agent = request(adapter.getApp());
 
   const listResponse = await agent.get("/users").expect(200);

@@ -2,7 +2,7 @@ import {
   applyValidationEnhancers,
   createApplicationContext,
 } from "@ocd-js/core";
-import { ExpressHttpAdapter } from "@ocd-js/server";
+import { HttpAdapter } from "@ocd-js/server";
 import { resolveSecurityTokens } from "@ocd-js/security";
 import {
   LOGGER,
@@ -113,7 +113,7 @@ async function main() {
 
   console.log("beta flag enabled", featureFlags.isEnabled("beta-users"));
 
-  const httpAdapter = new ExpressHttpAdapter({ module: AppModule });
+  const httpAdapter = new HttpAdapter({ module: AppModule });
   const previewServer = httpAdapter.getApp().listen(0);
   await new Promise<void>((resolve) =>
     previewServer.once("listening", resolve),
@@ -121,7 +121,7 @@ async function main() {
   const address = previewServer.address();
   if (address && typeof address === "object") {
     const { port } = address as AddressInfo;
-    logger.info("Express adapter online", {
+    logger.info("HTTP adapter online", {
       port,
       endpoints: httpAdapter.getRoutes().map((route) => ({
         method: route.method,

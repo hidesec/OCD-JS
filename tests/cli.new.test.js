@@ -48,7 +48,7 @@ test("ocd new scaffolds a layered application", async () => {
       path.join(projectDir, "src", "bootstrap.ts"),
       "utf8",
     );
-    assert.match(bootstrapContent, /ExpressHttpAdapter/);
+    assert.match(bootstrapContent, /HttpAdapter/);
 
     const rootModule = await fs.readFile(
       path.join(projectDir, "src", "root.module.ts"),

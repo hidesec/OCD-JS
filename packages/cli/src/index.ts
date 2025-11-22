@@ -101,6 +101,9 @@ program
     console.log("");
     console.log("Additional commands:");
     console.log("  ocd crud ResourceName --fields title:string,status:string");
+    console.log(
+      "  ocd new <name> --local-pack ./ocd-js-*.tgz   # scaffold using local pack",
+    );
   });
 
 program
@@ -108,6 +111,7 @@ program
   .argument("<name>", "Project folder name")
   .option("--directory <path>", "Parent directory", ".")
   .option("--force", "Overwrite existing files", false)
+  .option("--local-pack <path>", "Path to local ocd-js .tgz pack to use")
   .option(
     "--package-manager <manager>",
     "Preferred package manager (npm|pnpm|yarn|bun)",
@@ -124,6 +128,7 @@ program
       options: {
         directory?: string;
         force?: boolean;
+        localPack?: string;
         packageManager?: string;
         skipInstall?: boolean;
       },
@@ -136,6 +141,15 @@ program
       );
       const manager = normalizePackageManager(options.packageManager);
       await scaffoldProject(targetDir, slug, options.force ?? false);
+      const detectedPack = await resolveLocalPack(options.localPack);
+      if (detectedPack) {
+        await pinLocalPackDependency(targetDir, detectedPack);
+        console.log(
+          kleur.green(
+            `Using local pack: ${path.relative(targetDir, detectedPack)}`,
+          ),
+        );
+      }
       if (!options.skipInstall) {
         await installDependencies(targetDir, manager);
       } else {
@@ -1130,6 +1144,7 @@ const scaffoldProject = async (root: string, slug: string, force: boolean) => {
   const plan: Array<[string, string]> = [
     ["package.json", projectPackageJson(slug)],
     ["tsconfig.json", projectTsconfig()],
+    ["eslint.config.js", projectEslintFlatConfig()],
     [".eslintrc.cjs", projectEslintConfig()],
     [".prettierrc.cjs", projectPrettierConfig()],
     ["README.md", projectReadmeTemplate(slug)],
@@ -1159,7 +1174,7 @@ const projectPackageJson = (slug: string) => `{
     "build": "tsc",
     "start": "node dist/main.js",
     "dev": "tsx watch src/main.ts",
-    "lint": "eslint ./src --ext .ts",
+    "lint": "eslint ./src --ext .ts --config eslint.config.js",
     "test": "tsx --test ./src/**/*.spec.ts",
     "format": "prettier --write ./src/**/*.ts"
   },
@@ -1255,13 +1270,13 @@ bootstrap().catch((error) => {
 `;
 
 const projectBootstrapTemplate =
-  () => `import { ExpressHttpAdapter } from "ocd-js/server";
+  () => `import { HttpAdapter } from "ocd-js/server";
 import { RootModule } from "./root.module";
 
 export async function bootstrap() {
   const PORT = process.env.PORT || 3000;
 
-  const httpAdapter = new ExpressHttpAdapter({
+  const httpAdapter = new HttpAdapter({
     module: RootModule,
     versioning: {
       strategy: "path",
@@ -1384,6 +1399,24 @@ const projectEslintConfig = () => `module.exports = {
 };
 `;
 
+const projectEslintFlatConfig = () => `module.exports = [
+  {
+    files: ["src/**/*.ts"],
+    languageOptions: {
+      parser: require("@typescript-eslint/parser"),
+      ecmaVersion: 2020,
+      sourceType: "commonjs",
+    },
+    plugins: {
+      "@typescript-eslint": require("@typescript-eslint/eslint-plugin"),
+    },
+    rules: {
+      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    },
+  },
+];
+`;
+
 const projectPrettierConfig = () => `module.exports = {
   singleQuote: false,
   trailingComma: "all",
@@ -1468,6 +1501,47 @@ const runNpmInstall = async (packages: string[], tag: string) => {
     });
     child.on("error", reject);
   });
+};
+
+const resolveLocalPack = async (
+  explicit?: string,
+): Promise<string | undefined> => {
+  if (explicit) {
+    const p = path.resolve(process.cwd(), explicit);
+    try {
+      const stat = await fs.stat(p);
+      if (stat.isFile()) return p;
+    } catch {}
+  }
+  try {
+    const files = await fs.readdir(process.cwd());
+    const candidates = files.filter((f) => /^ocd-js-.*\.tgz$/.test(f));
+    if (candidates.length === 0) return undefined;
+    const withTime = await Promise.all(
+      candidates.map(async (f) => {
+        const full = path.join(process.cwd(), f);
+        const s = await fs.stat(full);
+        return { full, mtime: s.mtimeMs };
+      }),
+    );
+    withTime.sort((a, b) => b.mtime - a.mtime);
+    return withTime[0].full;
+  } catch {
+    return undefined;
+  }
+};
+
+const pinLocalPackDependency = async (
+  projectRoot: string,
+  packPath: string,
+) => {
+  const pkgFile = path.join(projectRoot, "package.json");
+  const content = await fs.readFile(pkgFile, "utf8");
+  const pkg = JSON.parse(content);
+  const rel = path.relative(projectRoot, packPath).replace(/\\/g, "/");
+  pkg.dependencies = pkg.dependencies || {};
+  pkg.dependencies["ocd-js"] = `file:${rel}`;
+  await fs.writeFile(pkgFile, JSON.stringify(pkg, null, 2), "utf8");
 };
 
 function createDriver(
