@@ -30,15 +30,7 @@ test("ocd new scaffolds a layered application", async () => {
       await fs.readFile(path.join(projectDir, "package.json"), "utf8"),
     );
     assert.equal(packageJson.name, slug);
-    assert.ok(packageJson.dependencies["@ocd-js/core"], "core dependency missing");
-    assert.ok(
-      packageJson.dependencies["@ocd-js/security"],
-      "security dependency missing",
-    );
-    assert.ok(
-      packageJson.dependencies["@ocd-js/governance"],
-      "governance dependency missing",
-    );
+    assert.ok(packageJson.dependencies["ocd-js"], "ocd-js dependency missing");
 
     const controllerPath = path.join(
       projectDir,
@@ -49,21 +41,21 @@ test("ocd new scaffolds a layered application", async () => {
     );
     const controllerContent = await fs.readFile(controllerPath, "utf8");
     assert.match(controllerContent, /@Controller/);
-    assert.match(controllerContent, /UseSecurity/);
+    assert.match(controllerContent, /@Get/);
     assert.match(controllerContent, /async readStatus/);
 
     const bootstrapContent = await fs.readFile(
       path.join(projectDir, "src", "bootstrap.ts"),
       "utf8",
     );
-    assert.match(bootstrapContent, /createApplicationContext/);
+    assert.match(bootstrapContent, /ExpressHttpAdapter/);
 
     const rootModule = await fs.readFile(
       path.join(projectDir, "src", "root.module.ts"),
       "utf8",
     );
-    assert.match(rootModule, /SecurityModule/);
-    assert.match(rootModule, /GovernanceModule/);
+    assert.match(rootModule, /@Module/);
+    assert.match(rootModule, /AppModule/);
 
     const eslintConfig = await fs.readFile(
       path.join(projectDir, ".eslintrc.cjs"),
@@ -195,16 +187,16 @@ test("ocd new scaffolds a layered application", async () => {
       ),
       "utf8",
     );
-    assert.match(specContent, /returns policy-aware status/);
-    assert.match(specContent, /RootModule/);
+    assert.match(specContent, /AppController returns status/);
+    assert.match(specContent, /AppModule/);
 
     const upgradeResult = runCli([
       "upgrade",
       "--dry-run",
       "--packages",
-      "@ocd-js/core",
+      "ocd-js",
     ]);
-    assert.match(upgradeResult.stdout, /npm install @ocd-js\/core@latest/);
+    assert.match(upgradeResult.stdout, /npm install ocd-js@latest/);
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
