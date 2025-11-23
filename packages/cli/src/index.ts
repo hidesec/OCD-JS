@@ -28,11 +28,16 @@ interface DriverCliOptions {
   sqliteFile?: string;
   url?: string;
   host?: string;
+  server?: string;
+  connectString?: string;
   port?: string;
   user?: string;
   password?: string;
   database?: string;
+  schema?: string;
   ssl?: string;
+  encrypt?: string;
+  trustServerCertificate?: string;
 }
 
 const DEFAULT_CRUD_FIELDS = "title:string,status:string";
@@ -447,7 +452,7 @@ function withDriverOptions(command: Command): Command {
   return command
     .option(
       "--driver <driver>",
-      "json|memory|sqlite|postgres|mysql driver",
+      "json|memory|sqlite|postgres|mysql|mssql|oracle driver",
       "json",
     )
     .option(
@@ -461,14 +466,22 @@ function withDriverOptions(command: Command): Command {
       "orm.sqlite",
     )
     .option("--url <url>", "SQL connection string for postgres/mysql drivers")
-    .option("--host <host>", "SQL host override")
+    .option("--host <host>", "SQL host override (postgres/mysql/mssql)")
+    .option("--server <server>", "SQL server (mssql)")
+    .option("--connect-string <string>", "Connection string (oracle)")
     .option("--port <port>", "SQL port override")
     .option("--user <user>", "SQL user override")
     .option("--password <password>", "SQL password override")
     .option("--database <name>", "SQL database name override")
+    .option("--schema <name>", "SQL schema name (postgres/mssql/oracle)")
     .option(
       "--ssl <mode>",
       "SQL SSL mode (true|false|require, defaults to driver preset)",
+    )
+    .option("--encrypt <mode>", "Enable encryption (mssql, true|false)")
+    .option(
+      "--trust-server-certificate <mode>",
+      "Trust server certificate (mssql, true|false)",
     );
 }
 
@@ -1574,6 +1587,7 @@ function createDriver(
       if (options.user) config.user = options.user;
       if (options.password) config.password = options.password;
       if (options.database) config.database = options.database;
+      if (options.schema) config.schema = options.schema;
       if (ssl !== undefined) config.ssl = ssl;
       return new orm.PostgresDatabaseDriver(config as any);
     }
@@ -1589,9 +1603,34 @@ function createDriver(
       if (ssl !== undefined) config.ssl = ssl;
       return new orm.MySqlDatabaseDriver(config as any);
     }
+    case "mssql": {
+      const config: Record<string, unknown> = {};
+      if (options.server) config.server = options.server;
+      if (options.host) config.server = options.host;
+      const port = parsePortOption(options.port);
+      if (port !== undefined) config.port = port;
+      if (options.user) config.user = options.user;
+      if (options.password) config.password = options.password;
+      if (options.database) config.database = options.database;
+      if (options.schema) config.schema = options.schema;
+      if (options.encrypt !== undefined)
+        config.encrypt = normalizeBoolOption(options.encrypt);
+      if (options.trustServerCertificate !== undefined)
+        config.trustServerCertificate = normalizeBoolOption(
+          options.trustServerCertificate,
+        );
+      return new orm.MssqlDatabaseDriver(config as any);
+    }
+    case "oracle": {
+      const config: Record<string, unknown> = {};
+      if (options.connectString) config.connectString = options.connectString;
+      if (options.user) config.user = options.user;
+      if (options.password) config.password = options.password;
+      return new orm.OracleDatabaseDriver(config as any);
+    }
     default:
       throw new Error(
-        `Unsupported driver "${options.driver ?? "unknown"}". Use json|memory|sqlite|postgres|mysql`,
+        `Unsupported driver "${options.driver ?? "unknown"}". Use json|memory|sqlite|postgres|mysql|mssql|oracle`,
       );
   }
 }
@@ -1599,18 +1638,28 @@ function createDriver(
 function normalizeDialect(
   dialect: string | undefined,
   driver?: string,
-): "sqlite" | "postgres" | "mysql" {
+): "sqlite" | "postgres" | "mysql" | "mssql" | "oracle" {
   if (dialect && isDialect(dialect)) {
     return dialect;
   }
   if (driver && isDialect(driver)) {
-    return driver as "sqlite" | "postgres" | "mysql";
+    return driver as "sqlite" | "postgres" | "mysql" | "mssql" | "oracle";
   }
   return "sqlite";
 }
 
-const isDialect = (value: string): value is "sqlite" | "postgres" | "mysql" =>
-  ["sqlite", "postgres", "mysql"].includes(value.toLowerCase());
+const isDialect = (
+  value: string,
+): value is "sqlite" | "postgres" | "mysql" | "mssql" | "oracle" =>
+  ["sqlite", "postgres", "mysql", "mssql", "oracle"].includes(
+    value.toLowerCase(),
+  );
+
+const normalizeBoolOption = (value?: string): boolean => {
+  if (value === undefined) return false;
+  const normalized = value.toLowerCase();
+  return normalized === "true" || normalized === "1";
+};
 
 const normalizePackageManager = (value?: string): PackageManager => {
   const normalized = (value ?? "npm").toLowerCase();
