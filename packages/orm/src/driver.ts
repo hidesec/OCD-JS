@@ -27,6 +27,12 @@ export interface ColumnSchema {
   type: string;
   nullable?: boolean;
   default?: unknown;
+  length?: number;
+  precision?: number;
+  scale?: number;
+  enumName?: string;
+  enumValues?: string[];
+  withTimeZone?: boolean;
 }
 
 export interface UniqueConstraintSchema {
@@ -445,6 +451,8 @@ export class SqliteDatabaseDriver implements DatabaseDriver {
       );
     }
     const { sql, params } = this.compilePlan(plan);
+    // expose last compiled statement for instrumentation consumers
+    (this as any).__lastQueryInfo = { sql, params };
     const rows = await this.select(sql, params);
     return rows as T[];
   }
@@ -612,13 +620,30 @@ export class SqliteDatabaseDriver implements DatabaseDriver {
   private sqliteType(type?: string): string {
     switch ((type ?? "string").toLowerCase()) {
       case "number":
+      case "float":
+      case "double":
+        return "REAL";
+      case "decimal":
+      case "bigint":
         return "NUMERIC";
       case "boolean":
         return "INTEGER";
       case "date":
+      case "timestamp":
+      case "timestamptz":
+      case "time":
         return "TEXT";
       case "json":
+      case "jsonb":
+      case "array":
+      case "uuid":
+      case "text":
+      case "enum":
+      case "string":
         return "TEXT";
+      case "binary":
+      case "blob":
+        return "BLOB";
       default:
         return "TEXT";
     }
@@ -1395,12 +1420,38 @@ export class PostgresDatabaseDriver implements DatabaseDriver {
   private toSqlType(type?: string) {
     switch (type) {
       case "number":
+      case "double":
         return "DOUBLE PRECISION";
+      case "float":
+        return "REAL";
+      case "decimal":
+        return "NUMERIC";
+      case "bigint":
+        return "BIGINT";
       case "boolean":
         return "BOOLEAN";
       case "date":
         return "TIMESTAMPTZ";
+      case "timestamp":
+        return "TIMESTAMP";
+      case "timestamptz":
+        return "TIMESTAMPTZ";
+      case "time":
+        return "TIME";
+      case "uuid":
+        return "UUID";
+      case "text":
+        return "TEXT";
+      case "binary":
+      case "blob":
+        return "BYTEA";
       case "json":
+        return "JSONB";
+      case "jsonb":
+        return "JSONB";
+      case "enum":
+        return "TEXT";
+      case "array":
         return "JSONB";
       default:
         return "TEXT";
@@ -1408,10 +1459,18 @@ export class PostgresDatabaseDriver implements DatabaseDriver {
   }
 
   private typeFromSql(type: string) {
-    if (type.includes("double")) return "number";
+    if (type.includes("double")) return "double";
+    if (type.includes("real")) return "float";
+    if (type.includes("numeric")) return "decimal";
+    if (type.includes("bigint")) return "bigint";
     if (type.includes("bool")) return "boolean";
-    if (type.includes("timestamp")) return "date";
+    if (type.includes("timestamptz")) return "timestamptz";
+    if (type.includes("timestamp")) return "timestamp";
+    if (type.includes("time")) return "time";
+    if (type.includes("uuid")) return "uuid";
+    if (type.includes("jsonb")) return "jsonb";
     if (type.includes("json")) return "json";
+    if (type.includes("bytea")) return "binary";
     return "string";
   }
 
@@ -1422,12 +1481,37 @@ export class PostgresDatabaseDriver implements DatabaseDriver {
   private pgCast(type?: string): string {
     switch (type) {
       case "number":
+      case "double":
         return "double precision";
+      case "float":
+        return "real";
+      case "decimal":
+        return "numeric";
+      case "bigint":
+        return "bigint";
       case "boolean":
         return "boolean";
       case "date":
+      case "timestamptz":
         return "timestamptz";
+      case "timestamp":
+        return "timestamp";
+      case "time":
+        return "time";
+      case "uuid":
+        return "uuid";
       case "json":
+        return "jsonb";
+      case "jsonb":
+        return "jsonb";
+      case "text":
+      case "enum":
+      case "string":
+        return "text";
+      case "binary":
+      case "blob":
+        return "bytea";
+      case "array":
         return "jsonb";
       default:
         return "text";

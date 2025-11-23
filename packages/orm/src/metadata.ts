@@ -1,4 +1,23 @@
-export type ColumnType = "string" | "number" | "boolean" | "date" | "json";
+export type ColumnType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "date"
+  | "json"
+  | "decimal"
+  | "float"
+  | "double"
+  | "bigint"
+  | "uuid"
+  | "text"
+  | "binary"
+  | "blob"
+  | "timestamp"
+  | "timestamptz"
+  | "time"
+  | "enum"
+  | "jsonb"
+  | "array";
 
 export type ReferentialAction =
   | "cascade"
@@ -12,6 +31,12 @@ export interface ColumnOptions {
   nullable?: boolean;
   default?: unknown;
   unique?: boolean;
+  length?: number;
+  precision?: number;
+  scale?: number;
+  enumName?: string;
+  enumValues?: string[];
+  withTimeZone?: boolean;
   references?: {
     entity: () => Function;
     column?: string;

@@ -25,3 +25,5 @@ export * from "./events";
 export * from "./resilience";
 export * from "./second-level-cache";
 export * from "./query-instrumentation";
+export * from "./logging/query-logger";
+export * from "./driver-odbc-cli";

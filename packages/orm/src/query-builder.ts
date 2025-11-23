@@ -344,10 +344,19 @@ export class QueryBuilder<T extends object> {
     let relationsLoaded = false;
     let error: unknown;
     const joinTypeCounts = this.summarizeJoinTypes();
+    let lastSql: string | undefined;
+    let lastParams: unknown[] | undefined;
     try {
       const queried = await this.tryDriverQuery(plan);
       driverPushdown = queried !== null;
       source = driverPushdown ? "driver" : "table";
+      if (driverPushdown) {
+        const last = (this.driver as any).__lastQueryInfo as
+          | { sql?: string; params?: unknown[] }
+          | undefined;
+        lastSql = last?.sql;
+        lastParams = last?.params as unknown[] | undefined;
+      }
       const rows = driverPushdown
         ? queried!
         : await this.driver.readTable<any>(this.metadata.tableName);
@@ -400,6 +409,8 @@ export class QueryBuilder<T extends object> {
         scanType: driverPushdown ? "driverPushdown" : "tableScan",
         timestamp,
         error,
+        sql: lastSql,
+        params: lastParams,
       });
     }
   }
@@ -415,12 +426,19 @@ export class QueryBuilder<T extends object> {
     let source: "driver" | "table" = "table";
     let rows: Record<string, unknown>[] = [];
     let error: unknown;
+    let lastSql: string | undefined;
+    let lastParams: unknown[] | undefined;
     try {
       const queried = await this.tryDriverQuery(plan);
       if (queried) {
         driverPushdown = true;
         source = "driver";
         rows = queried as Record<string, unknown>[];
+        const last = (this.driver as any).__lastQueryInfo as
+          | { sql?: string; params?: unknown[] }
+          | undefined;
+        lastSql = last?.sql;
+        lastParams = last?.params as unknown[] | undefined;
       } else {
         const tableRows = await this.driver.readTable<Record<string, unknown>>(
           this.metadata.tableName,
@@ -450,6 +468,8 @@ export class QueryBuilder<T extends object> {
         scanType: driverPushdown ? "driverPushdown" : "tableScan",
         timestamp,
         error,
+        sql: lastSql,
+        params: lastParams,
       });
     }
   }

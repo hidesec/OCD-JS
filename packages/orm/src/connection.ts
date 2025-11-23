@@ -17,6 +17,10 @@ import {
   SecondLevelCacheOptions,
 } from "./second-level-cache";
 import { emitOrmEvent } from "./events";
+import {
+  installOrmQueryLogger,
+  OrmQueryLoggingOptions,
+} from "./logging/query-logger";
 
 export interface ConnectionCacheOptions extends SecondLevelCacheOptions {
   enabled?: boolean;
@@ -25,6 +29,7 @@ export interface ConnectionCacheOptions extends SecondLevelCacheOptions {
 export interface ConnectionOptions {
   driver?: DatabaseDriver;
   cache?: ConnectionCacheOptions;
+  logging?: OrmQueryLoggingOptions;
 }
 
 export interface TransactionOptions {
@@ -43,6 +48,9 @@ export class Connection {
     this.driver = enabled
       ? withSecondLevelCache(baseDriver, cacheOptions)
       : baseDriver;
+    if (options.logging?.enabled) {
+      installOrmQueryLogger(options.logging);
+    }
   }
 
   async initialize(): Promise<void> {

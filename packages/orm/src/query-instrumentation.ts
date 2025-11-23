@@ -28,6 +28,8 @@ export interface QueryPlanMetricsPayload {
   scanType: QueryScanType;
   timestamp: number;
   error?: unknown;
+  sql?: string;
+  params?: unknown[];
 }
 
 export type QueryPlanMetricsHandler = (
